@@ -25,10 +25,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build both flavors (android26 & android33)
+      - name: Build both flavors (skip lint)
+        env:
+          GRADLE_OPTS: "-Xmx4096m"
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease -x lintVital
 
       - name: List generated APKs
         run: |

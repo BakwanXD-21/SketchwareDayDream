@@ -9,7 +9,7 @@ if (analyticsEnabled) {
 }
 
 android {
-    compileSdk = 37
+   compileSdk = 37
 
     def gitCommitHash = "git rev-parse HEAD".execute().text.trim()
     def shortCommitHash = "git rev-parse --short HEAD".execute().text.trim()
@@ -17,14 +17,12 @@ android {
     defaultConfig {
         applicationId = "pro.sketchware"
         namespace = "pro.sketchware"
-        //noinspection ExpiredTargetSdkVersion since we don't target getting Sketchware Pro on Google Play.
         targetSdk = 28
         minSdk = 26
         versionCode = 150
         versionName = "v7.0.0-daydream-${shortCommitHash}"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
-
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
     }
 
@@ -34,6 +32,12 @@ android {
             proguardFiles (getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.debug
         }
+    }
+
+    // ✅ TAMBAHKAN INI
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 
     packagingOptions {

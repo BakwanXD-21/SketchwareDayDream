@@ -37,10 +37,14 @@ jobs:
           echo "=== Generated APKs ==="
           ls -la app/build/outputs/apk/*/release/*.apk || echo "No APKs found"
 
-      - name: Upload all APKs as artifacts
+      - name: Upload APK Android 26
         uses: actions/upload-artifact@v4
         with:
-          name: Sketchware-APKs
-          path: |
-            app/build/outputs/apk/android26/release/*.apk
-            app/build/outputs/apk/android33/release/*.apk
+          name: Sketchware-Android26
+          path: app/build/outputs/apk/android26/release/*.apk
+
+      - name: Upload APK Android 33
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sketchware-Android33
+          path: app/build/outputs/apk/android33/release/*.apk

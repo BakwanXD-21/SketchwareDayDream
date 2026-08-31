@@ -15,7 +15,6 @@ import android.view.ViewParent;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.besome.sketch.help.ProgramInfoActivity;
@@ -25,7 +24,6 @@ import com.google.android.material.navigation.NavigationView;
 import a.a.a.mB;
 import dev.chrisbanes.insetter.Insetter;
 import dev.chrisbanes.insetter.Side;
-import extensions.anbui.daydream.activity.DayDreamCleanUp;
 import extensions.anbui.daydream.activity.project.settings.DayDreamUniversalSettingsActivity;
 import mod.hilal.saif.activities.tools.AppSettings;
 import pro.sketchware.R;
@@ -72,19 +70,12 @@ public class MainDrawer extends NavigationView {
 
     private void initializeSocialLinks(@IdRes int id) {
         if (!mB.a()) {
-            @StringRes int url = -1;
             if (id == R.id.social_discord) {
-                url = R.string.link_discord_invite;
+                openUrl("https://discord.gg/eZYMbe2hAw");
             } else if (id == R.id.social_telegram) {
-                url = R.string.link_telegram_invite;
+                openUrl(getContext().getString(R.string.link_telegram_invite));
             } else if (id == R.id.social_github) {
-                url = R.string.link_github_url;
-            } else if (id == R.id.app_sw_assist) {
-                url = R.string.link_sw_assist;
-            }
-
-            if (url != -1) {
-                openUrl(getContext().getString(url));
+                openUrl("https://github.com/BakwanXD-21");
             }
         }
     }
@@ -95,17 +86,10 @@ public class MainDrawer extends NavigationView {
             Intent intent = new Intent(activity, AboutActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             activity.startActivity(intent);
-        } else if (id == R.id.changelog) {
-            Intent intent = new Intent(activity, AboutActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("select", "changelog");
-            activity.startActivity(intent);
         } else if (id == R.id.program_info) {
             Intent intent = new Intent(activity, ProgramInfoActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             activity.startActivityForResult(intent, 105);
-        } else if (id == R.id.daydream_cleanup) {
-            activity.startActivity(new Intent(activity, DayDreamCleanUp.class));
         } else if (id == R.id.app_settings) {
             Intent intent = new Intent(activity, AppSettings.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);

@@ -133,7 +133,7 @@
             android:contentDescription="New Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_add"
-            app:shapeAppearance="@style/ShapeAppearance.App.FAB"
+            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior" />
 
         <!--
@@ -151,7 +151,7 @@
             android:contentDescription="Restore Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_history"
-            app:shapeAppearance="@style/ShapeAppearance.App.FAB"
+            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior" />
 
         <!--
@@ -168,7 +168,7 @@
             android:layout_marginBottom="16dp"
             android:contentDescription="Actions"
             app:icon="@drawable/ic_mtrl_folder"
-            app:shapeAppearance="@style/ShapeAppearance.App.FAB"
+            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior"
             tools:ignore="ContentDescription" />
 

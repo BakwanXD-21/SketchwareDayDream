@@ -11,10 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!--
-            AppBarLayout tanpa layout_scrollFlags di child-nya
-            → selalu fixed di atas, tidak ikut scroll konten
-        -->
+        <!-- AppBarLayout fixed di atas, tidak ikut scroll -->
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appbar"
             android:layout_width="match_parent"
@@ -22,19 +19,12 @@
             app:elevation="0dp"
             app:liftOnScroll="false">
 
-            <!-- Placeholder tinggi status bar, diisi secara programatik -->
             <View
                 android:id="@+id/status_bar_overlapper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-            <!--
-                Search bar:
-                - radius 32dp (lebih kotak dari sebelumnya 50dp)
-                - SearchView tanpa underline, tanpa icon search, hint hilang saat fokus
-                - tombol X (close) tetap ada
-                - Toolbar tersembunyi di balik layout ini — hanya dipakai untuk drawer toggle
-            -->
+            <!-- Search bar: radius 32dp, tanpa underline, tanpa icon search -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -57,24 +47,13 @@
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp">
 
-                    <!--
-                        Toolbar tersembunyi di sini hanya untuk ActionBarDrawerToggle.
-                        Judul dan menu item tidak ditampilkan.
-                    -->
+                    <!-- Toolbar 48x48 hanya untuk ActionBarDrawerToggle (hamburger icon) -->
                     <com.google.android.material.appbar.MaterialToolbar
                         android:id="@+id/toolbar"
                         android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="0dp" />
+                        android:layout_height="48dp" />
 
-                    <!--
-                        SearchView:
-                        - iconifiedByDefault="false" → selalu expanded
-                        - searchIcon="@null" → icon kaca pembesar hilang
-                        - queryHint muncul saat kosong, hilang otomatis saat mulai ketik
-                        - underline dihilangkan via Java (search_plate background = TRANSPARENT)
-                        - closeIcon (tombol X) tetap ada secara default
-                    -->
+                    <!-- SearchView: selalu expanded, tanpa icon search, underline dihapus via Java -->
                     <androidx.appcompat.widget.SearchView
                         android:id="@+id/search_view"
                         android:layout_width="0dp"
@@ -89,14 +68,14 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Konten fragment, mengikuti tinggi AppBarLayout -->
+        <!-- Konten fragment -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- BottomNavigationView (saat ini disembunyikan, sama seperti aslinya) -->
+        <!-- BottomNavigationView (disembunyikan, sama seperti aslinya) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -119,8 +98,22 @@
         </LinearLayout>
 
         <!--
-            FAB Create New Project
-            Muncul saat FAB utama di-tap (posisi paling atas dari dua sub-FAB)
+            Overlay transparan: klik di luar FAB saat expanded → collapse
+            Harus di bawah konten tapi di atas FAB agar tidak blok scroll
+        -->
+        <View
+            android:id="@+id/fab_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#00000000"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
+        <!--
+            FAB Create New Project (sub-FAB atas)
+            Margin bottom diatur via Insetter di Java (navigation bar aware)
+            Base margin: 16dp FAB utama + 56dp tinggi FAB + 8dp gap = ~80dp dari FAB utama
         -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fab_create"
@@ -128,17 +121,15 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="148dp"
+            android:layout_marginBottom="136dp"
             android:text="New Project"
             android:contentDescription="New Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_add"
-            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
-            app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior" />
+            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded" />
 
         <!--
-            FAB Restore Project
-            Muncul saat FAB utama di-tap (posisi tepat di atas FAB utama)
+            FAB Restore Project (sub-FAB bawah, tepat di atas FAB utama)
         -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fab_restore"
@@ -146,18 +137,17 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="84dp"
+            android:layout_marginBottom="76dp"
             android:text="Restore"
             android:contentDescription="Restore Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_history"
-            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
-            app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior" />
+            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded" />
 
         <!--
-            FAB utama: icon folder, hanya icon tanpa teks
-            Tap → expand sub-FAB (restore + create)
-            Tap lagi → collapse
+            FAB utama: icon folder, tanpa teks
+            Tap → expand sub-FAB | Tap lagi atau tap overlay → collapse
+            Margin bottom: 16dp + navigation bar via Insetter di Java
         -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/create_new_project"

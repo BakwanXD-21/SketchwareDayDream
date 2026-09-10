@@ -143,7 +143,7 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
 
-        binding.myprojects.post(this::refreshProjectsList);
+        refreshProjectsList();
         UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);

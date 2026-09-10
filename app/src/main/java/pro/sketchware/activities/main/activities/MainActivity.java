@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -36,6 +37,7 @@ import java.util.Objects;
 
 import a.a.a.DB;
 import a.a.a.GB;
+import dev.chrisbanes.insetter.Insetter;
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.file.FilesTools;
 import extensions.anbui.daydream.git.GitQuickLook;
@@ -131,7 +133,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     }
                     break;
                 case 212:
-                    if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
+                    if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty()
+                            && isStoragePermissionGranted()) {
                         if (activeFragment instanceof ProjectsFragment) {
                             projectsFragment.refreshProjectsList();
                         }
@@ -156,7 +159,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Pakai toolbar untuk drawer toggle saja, judul disembunyikan
+        // Toolbar hanya untuk ActionBarDrawerToggle, judul disembunyikan
         setSupportActionBar(binding.toolbar);
         binding.statusBarOverlapper.setMinimumHeight(UI.getStatusBarHeight(this));
         UI.addSystemWindowInsetToPadding(binding.appbar, true, false, true, false);
@@ -174,7 +177,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(null);
 
-        drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
+        drawerToggle = new ActionBarDrawerToggle(
+                this, binding.drawerLayout, R.string.app_name, R.string.app_name);
         binding.drawerLayout.addDrawerListener(drawerToggle);
         binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
@@ -201,22 +205,23 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (searchPlate != null) {
             searchPlate.setBackgroundColor(Color.TRANSPARENT);
         }
-        // Hint hilang saat fokus — default SearchView sudah handle ini
-        // Hubungkan search ke ProjectsFragment
-        binding.searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextChange(String s) {
-                if (projectsFragment != null) {
-                    projectsFragment.filterFromSearch(s);
-                }
-                return true;
-            }
 
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                return false;
-            }
-        });
+        // Hubungkan SearchView ke ProjectsFragment
+        binding.searchView.setOnQueryTextListener(
+                new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextChange(String s) {
+                        if (projectsFragment != null) {
+                            projectsFragment.filterFromSearch(s);
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onQueryTextSubmit(String s) {
+                        return false;
+                    }
+                });
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -239,15 +244,21 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     }
 
                     @Override
-                    public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful, @NonNull String reason) {
+                    public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful,
+                            @NonNull String reason) {
                         if (wasSuccessful) {
-                            BackupRestoreManager manager = new BackupRestoreManager(MainActivity.this, projectsFragment);
+                            BackupRestoreManager manager =
+                                    new BackupRestoreManager(MainActivity.this, projectsFragment);
                             if (BackupFactory.zipContainsFile(path, "local_libs")) {
                                 new MaterialAlertDialogBuilder(MainActivity.this)
                                         .setTitle("Warning")
-                                        .setMessage(BackupRestoreManager.getRestoreIntegratedLocalLibrariesMessage(false, -1, -1, null))
-                                        .setPositiveButton("Copy", (dialog, which) -> manager.doRestore(path, true))
-                                        .setNegativeButton("Don't copy", (dialog, which) -> manager.doRestore(path, false))
+                                        .setMessage(BackupRestoreManager
+                                                .getRestoreIntegratedLocalLibrariesMessage(
+                                                        false, -1, -1, null))
+                                        .setPositiveButton("Copy",
+                                                (dialog, which) -> manager.doRestore(path, true))
+                                        .setNegativeButton("Don't copy",
+                                                (dialog, which) -> manager.doRestore(path, false))
                                         .setNeutralButton(R.string.common_word_cancel, null)
                                         .show();
                             } else {
@@ -255,7 +266,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                             }
                             getIntent().setData(null);
                         } else {
-                            SketchwareUtil.toastError("Failed to copy backup file to temporary location: " + reason, Toast.LENGTH_LONG);
+                            SketchwareUtil.toastError(
+                                    "Failed to copy backup file to temporary location: " + reason,
+                                    Toast.LENGTH_LONG);
                         }
                     }
                 }).copyFile(data);
@@ -275,8 +288,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         });
 
         if (savedInstanceState != null) {
-            projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
-            projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);
+            projectsFragment = (ProjectsFragment) getSupportFragmentManager()
+                    .findFragmentByTag(PROJECTS_FRAGMENT_TAG);
+            projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager()
+                    .findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);
             currentNavItemId = savedInstanceState.getInt("selected_tab_id");
             Fragment current = getFragmentForNavId(currentNavItemId);
             if (current instanceof ProjectsFragment) {
@@ -299,6 +314,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     // ── FAB expand/collapse ──────────────────────────────────────────────────
 
     private void setupFab() {
+        // Navigation bar inset untuk semua FAB agar tidak tertutup gesture bar
+        Insetter.builder()
+                .margin(WindowInsetsCompat.Type.navigationBars())
+                .applyToView(binding.createNewProject);
+        Insetter.builder()
+                .margin(WindowInsetsCompat.Type.navigationBars())
+                .applyToView(binding.fabRestore);
+        Insetter.builder()
+                .margin(WindowInsetsCompat.Type.navigationBars())
+                .applyToView(binding.fabCreate);
+
         // FAB utama: toggle expand/collapse
         binding.createNewProject.setOnClickListener(v -> toggleFab());
 
@@ -313,6 +339,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             collapseFab();
             if (projectsFragment != null) projectsFragment.toProjectSettingsActivity();
         });
+
+        // Overlay: klik di luar FAB → collapse
+        binding.fabOverlay.setOnClickListener(v -> collapseFab());
     }
 
     private void toggleFab() {
@@ -325,6 +354,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void expandFab() {
         isFabExpanded = true;
+        binding.fabOverlay.setVisibility(View.VISIBLE);
         binding.fabRestore.setVisibility(View.VISIBLE);
         binding.fabCreate.setVisibility(View.VISIBLE);
         binding.fabRestore.extend();
@@ -333,6 +363,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void collapseFab() {
         isFabExpanded = false;
+        binding.fabOverlay.setVisibility(View.GONE);
         binding.fabRestore.setVisibility(View.GONE);
         binding.fabCreate.setVisibility(View.GONE);
     }
@@ -386,11 +417,12 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentTransaction transaction = fm.beginTransaction();
 
         binding.createNewProject.hide();
-        collapseFab(); // sembunyikan sub-FAB saat pindah tab
+        collapseFab(); // tutup sub-FAB saat pindah tab
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
             shouldShow = false;
-            transaction.add(binding.container.getId(), projectsStoreFragment, PROJECTS_STORE_FRAGMENT_TAG);
+            transaction.add(binding.container.getId(), projectsStoreFragment,
+                    PROJECTS_STORE_FRAGMENT_TAG);
         }
         if (shouldShow) transaction.show(projectsStoreFragment);
         transaction.commit();
@@ -441,7 +473,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (freeMegabytes < 100 && freeMegabytes > 0) {
             showNoticeNotEnoughFreeStorageSpace();
         }
-        if (isStoragePermissionGranted() && storageAccessDenied != null && storageAccessDenied.isShown()) {
+        if (isStoragePermissionGranted() && storageAccessDenied != null
+                && storageAccessDenied.isShown()) {
             storageAccessDenied.dismiss();
         }
         Bundle bundle = new Bundle();
@@ -456,7 +489,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         GitQuickLook.cleanUp(this);
 
-        if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER) && FilesTools.isPermissionGranted(this)) {
+        if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER)
+                && FilesTools.isPermissionGranted(this)) {
             BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();
             bottomSheetDialog.getPositiveButton().setEnabled(false);
 
@@ -486,18 +520,23 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_mtrl_warning);
                 dialog.setTitle("Android 11 storage access");
-                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid " + "taking ages to build projects. Don't worry, we can't do more to storage than " + "with current granted permissions.");
-                dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings), (v, which) -> {
-                    FileUtil.requestAllFilesAccessPermission(this);
-                    v.dismiss();
-                });
+                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid "
+                        + "taking ages to build projects. Don't worry, we can't do more to storage than "
+                        + "with current granted permissions.");
+                dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings),
+                        (v, which) -> {
+                            FileUtil.requestAllFilesAccessPermission(this);
+                            v.dismiss();
+                        });
                 dialog.setNegativeButton("Skip", null);
                 dialog.setNeutralButton("Don't show anymore", (v, which) -> {
                     try {
                         if (!optOutFile.createNewFile())
                             throw new IOException("Failed to create file " + optOutFile);
                     } catch (IOException e) {
-                        Log.e("MainActivity", "Error while trying to create " + "\"Don't show Android 11 hint\" dialog file: " + e.getMessage(), e);
+                        Log.e("MainActivity",
+                                "Error while trying to create \"Don't show Android 11 hint\" dialog file: "
+                                        + e.getMessage(), e);
                     }
                     v.dismiss();
                 });
@@ -510,30 +549,42 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
         dialog.setTitle(Helper.getResString(R.string.common_message_permission_title_storage));
         dialog.setIcon(R.drawable.ic_mtrl_folder);
-        dialog.setMessage(Helper.getResString(R.string.common_message_permission_need_load_project));
+        dialog.setMessage(
+                Helper.getResString(R.string.common_message_permission_need_load_project));
         dialog.setPositiveButton(Helper.getResString(R.string.common_word_ok), (v, which) -> {
             v.dismiss();
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 9501);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            Manifest.permission.READ_EXTERNAL_STORAGE},
+                    9501);
         });
         dialog.show();
     }
 
     private void showNoticeNotEnoughFreeStorageSpace() {
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
-        dialog.setTitle(Helper.getResString(R.string.common_message_insufficient_storage_space_title));
+        dialog.setTitle(
+                Helper.getResString(R.string.common_message_insufficient_storage_space_title));
         dialog.setIcon(R.drawable.disc_full_24px);
-        dialog.setMessage(Helper.getResString(R.string.common_message_insufficient_storage_space));
+        dialog.setMessage(
+                Helper.getResString(R.string.common_message_insufficient_storage_space));
         dialog.setPositiveButton(Helper.getResString(R.string.common_word_ok), null);
         dialog.show();
     }
 
     public void s() {
         if (storageAccessDenied == null || !storageAccessDenied.isShown()) {
-            storageAccessDenied = Snackbar.make(binding.layoutCoordinator, Helper.getResString(R.string.common_message_permission_denied), Snackbar.LENGTH_INDEFINITE);
-            storageAccessDenied.setAction(Helper.getResString(R.string.common_word_settings), v -> {
-                storageAccessDenied.dismiss();
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 9501);
-            });
+            storageAccessDenied = Snackbar.make(binding.layoutCoordinator,
+                    Helper.getResString(R.string.common_message_permission_denied),
+                    Snackbar.LENGTH_INDEFINITE);
+            storageAccessDenied.setAction(Helper.getResString(R.string.common_word_settings),
+                    v -> {
+                        storageAccessDenied.dismiss();
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                        Manifest.permission.READ_EXTERNAL_STORAGE},
+                                9501);
+                    });
             storageAccessDenied.setActionTextColor(Color.YELLOW);
             storageAccessDenied.show();
         }

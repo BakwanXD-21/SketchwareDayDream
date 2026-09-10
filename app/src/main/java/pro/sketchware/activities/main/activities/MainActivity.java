@@ -205,6 +205,12 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (searchPlate != null) {
             searchPlate.setBackgroundColor(Color.TRANSPARENT);
         }
+        
+        // Tambahkan di dalam onCreate() MainActivity.java di dekat inisialisasi searchView:
+        ImageButton btnCloseApp = binding.getRoot().findViewById(R.id.btn_close_app);
+        if (btnCloseApp != null) {
+           btnCloseApp.setOnClickListener(v -> finish());
+        }
 
         // Hubungkan SearchView ke ProjectsFragment
         binding.searchView.setOnQueryTextListener(

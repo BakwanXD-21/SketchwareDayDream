@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- AppBarLayout fixed di atas, tidak ikut scroll -->
+        <!-- AppBarLayout fixed di atas -->
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appbar"
             android:layout_width="match_parent"
@@ -24,7 +24,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-            <!-- Search bar: radius 32dp, tanpa underline, tanpa icon search -->
+            <!-- Search bar: radius 32dp -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -47,13 +47,13 @@
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp">
 
-                    <!-- Toolbar 48x48 hanya untuk ActionBarDrawerToggle (hamburger icon) -->
+                    <!-- Toolbar untuk drawer toggle -->
                     <com.google.android.material.appbar.MaterialToolbar
                         android:id="@+id/toolbar"
                         android:layout_width="48dp"
                         android:layout_height="48dp" />
 
-                    <!-- SearchView: selalu expanded, tanpa icon search, underline dihapus via Java -->
+                    <!-- SearchView -->
                     <androidx.appcompat.widget.SearchView
                         android:id="@+id/search_view"
                         android:layout_width="0dp"
@@ -63,19 +63,30 @@
                         app:searchIcon="@null"
                         app:queryHint="Search for projects..." />
 
+                    <!-- Tombol Close untuk keluar dari aplikasi -->
+                    <ImageButton
+                        android:id="@+id/btn_close_app"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Close App"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_close_white_36dp"
+                        app:tint="?attr/colorOnSurface" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Konten fragment -->
+        <!-- Container Fragment -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- BottomNavigationView (disembunyikan, sama seperti aslinya) -->
+        <!-- BottomNavigationView (Hidden) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -97,10 +108,7 @@
 
         </LinearLayout>
 
-        <!--
-            Overlay transparan: klik di luar FAB saat expanded → collapse
-            Harus di bawah konten tapi di atas FAB agar tidak blok scroll
-        -->
+        <!-- Overlay transparan -->
         <View
             android:id="@+id/fab_overlay"
             android:layout_width="match_parent"
@@ -110,11 +118,7 @@
             android:focusable="true"
             android:visibility="gone" />
 
-        <!--
-            FAB Create New Project (sub-FAB atas)
-            Margin bottom diatur via Insetter di Java (navigation bar aware)
-            Base margin: 16dp FAB utama + 56dp tinggi FAB + 8dp gap = ~80dp dari FAB utama
-        -->
+        <!-- Sub-FAB Create -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fab_create"
             android:layout_width="wrap_content"
@@ -126,11 +130,9 @@
             android:contentDescription="New Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_add"
-            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded" />
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.FAB.RoundedBox" />
 
-        <!--
-            FAB Restore Project (sub-FAB bawah, tepat di atas FAB utama)
-        -->
+        <!-- Sub-FAB Restore -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fab_restore"
             android:layout_width="wrap_content"
@@ -142,13 +144,9 @@
             android:contentDescription="Restore Project"
             android:visibility="gone"
             app:icon="@drawable/ic_mtrl_history"
-            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded" />
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.FAB.RoundedBox" />
 
-        <!--
-            FAB utama: icon folder, tanpa teks
-            Tap → expand sub-FAB | Tap lagi atau tap overlay → collapse
-            Margin bottom: 16dp + navigation bar via Insetter di Java
-        -->
+        <!-- FAB Utama: Rounded Box -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/create_new_project"
             android:layout_width="wrap_content"
@@ -158,7 +156,7 @@
             android:layout_marginBottom="16dp"
             android:contentDescription="Actions"
             app:icon="@drawable/ic_mtrl_folder"
-            app:shapeAppearance="@style/ShapeAppearance.FAB.Rounded"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.FAB.RoundedBox"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior"
             tools:ignore="ContentDescription" />
 

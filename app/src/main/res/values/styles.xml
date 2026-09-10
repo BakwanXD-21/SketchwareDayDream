@@ -139,8 +139,8 @@
         <item name="thumbIcon">@drawable/switch_thumb_icon</item>
     </style>
     
-    <style name="ShapeAppearance.FAB.Rounded" parent="">
-    <item name="cornerFamily">rounded</item>
-    <item name="cornerSize">32dp</item>
+    <style name="ShapeAppearance.FAB.RoundedBox" parent="ShapeAppearance.Material3.Corner.Small">
+    <item name="cornerSize">16dp</item>
+    </style>
 </style>
 </resources>

@@ -1,7 +1,6 @@
 package pro.sketchware.activities.main.activities;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -12,7 +11,6 @@ import android.os.CountDownTimer;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -30,9 +28,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +44,6 @@ import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.tools.ConfigActivity;
-import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.about.AboutActivity;
@@ -81,23 +76,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private Fragment activeFragment;
     private BackupRestoreManager backupRestoreManager;
     public static boolean needRefreshProjectList = false;
+
+    // FAB expand/collapse state
+    private boolean isFabExpanded = false;
+
     @IdRes
     private int currentNavItemId = R.id.item_projects;
 
-//    private static boolean isFirebaseInitialized(Context context) {
-//        try {
-//            return FirebaseApp.getApps(context) != null && !FirebaseApp.getApps(context).isEmpty();
-//        } catch (Exception e) {
-//            return false;
-//        }
-//    }
-
     @Override
-    // onRequestPermissionsResult but for Storage access only, and only when granted
     public void g(int i) {
         if (i == 9501) {
             allFilesAccessCheck();
-
             if (activeFragment instanceof ProjectsFragment) {
                 projectsFragment.refreshProjectsList();
             }
@@ -133,17 +122,14 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 case 105:
                     DataResetter.a(this, data.getBooleanExtra("onlyConfig", true));
                     break;
-
                 case 111:
                     invalidateOptionsMenu();
                     break;
-
                 case 113:
                     if (data != null && data.getBooleanExtra("not_show_popup_anymore", false)) {
                         u.a("U1I2", (Object) false);
                     }
                     break;
-
                 case 212:
                     if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
                         if (activeFragment instanceof ProjectsFragment) {
@@ -168,10 +154,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         enableEdgeToEdgeNoContrast();
 
         binding = MainBinding.inflate(getLayoutInflater());
-
         setContentView(binding.getRoot());
-        setSupportActionBar(binding.toolbar);
 
+        // Pakai toolbar untuk drawer toggle saja, judul disembunyikan
+        setSupportActionBar(binding.toolbar);
         binding.statusBarOverlapper.setMinimumHeight(UI.getStatusBarHeight(this));
         UI.addSystemWindowInsetToPadding(binding.appbar, true, false, true, false);
 
@@ -181,7 +167,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (u1I1 <= 0) {
             u.a("U1I1", System.currentTimeMillis());
         }
-        if (System.currentTimeMillis() - u1I1 > /* (a day) */ 1000 * 60 * 60 * 24) {
+        if (System.currentTimeMillis() - u1I1 > 1000 * 60 * 60 * 24) {
             u.a("U1I0", Integer.valueOf(u1I0 + 1));
         }
 
@@ -210,6 +196,28 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
+        // Hilangkan underline SearchView
+        View searchPlate = binding.searchView.findViewById(androidx.appcompat.R.id.search_plate);
+        if (searchPlate != null) {
+            searchPlate.setBackgroundColor(Color.TRANSPARENT);
+        }
+        // Hint hilang saat fokus — default SearchView sudah handle ini
+        // Hubungkan search ke ProjectsFragment
+        binding.searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextChange(String s) {
+                if (projectsFragment != null) {
+                    projectsFragment.filterFromSearch(s);
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextSubmit(String s) {
+                return false;
+            }
+        });
+
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
             showNoticeNeedStorageAccess();
@@ -234,7 +242,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful, @NonNull String reason) {
                         if (wasSuccessful) {
                             BackupRestoreManager manager = new BackupRestoreManager(MainActivity.this, projectsFragment);
-
                             if (BackupFactory.zipContainsFile(path, "local_libs")) {
                                 new MaterialAlertDialogBuilder(MainActivity.this)
                                         .setTitle("Warning")
@@ -246,8 +253,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                             } else {
                                 manager.doRestore(path, true);
                             }
-
-                            // Clear intent so it doesn't duplicate
                             getIntent().setData(null);
                         } else {
                             SketchwareUtil.toastError("Failed to copy backup file to temporary location: " + reason, Toast.LENGTH_LONG);
@@ -279,16 +284,60 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             } else if (current instanceof ProjectsStoreFragment) {
                 navigateToSketchubFragment();
             }
-
+            setupFab();
             return;
         }
 
         navigateToProjectsFragment();
+        setupFab();
 
         backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
         Configs.mainActivity = this;
         DRSetup.startNow(this);
     }
+
+    // ── FAB expand/collapse ──────────────────────────────────────────────────
+
+    private void setupFab() {
+        // FAB utama: toggle expand/collapse
+        binding.createNewProject.setOnClickListener(v -> toggleFab());
+
+        // FAB Restore
+        binding.fabRestore.setOnClickListener(v -> {
+            collapseFab();
+            if (projectsFragment != null) projectsFragment.restoreProject();
+        });
+
+        // FAB Create New Project
+        binding.fabCreate.setOnClickListener(v -> {
+            collapseFab();
+            if (projectsFragment != null) projectsFragment.toProjectSettingsActivity();
+        });
+    }
+
+    private void toggleFab() {
+        if (isFabExpanded) {
+            collapseFab();
+        } else {
+            expandFab();
+        }
+    }
+
+    private void expandFab() {
+        isFabExpanded = true;
+        binding.fabRestore.setVisibility(View.VISIBLE);
+        binding.fabCreate.setVisibility(View.VISIBLE);
+        binding.fabRestore.extend();
+        binding.fabCreate.extend();
+    }
+
+    private void collapseFab() {
+        isFabExpanded = false;
+        binding.fabRestore.setVisibility(View.GONE);
+        binding.fabCreate.setVisibility(View.GONE);
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
 
     private Fragment getFragmentForNavId(int navItemId) {
         if (navItemId == R.id.item_projects) {
@@ -337,6 +386,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentTransaction transaction = fm.beginTransaction();
 
         binding.createNewProject.hide();
+        collapseFab(); // sembunyikan sub-FAB saat pindah tab
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
             shouldShow = false;
@@ -370,7 +420,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
         if (drawerToggle.onOptionsItemSelected(item)) {
             return true;
         } else {
@@ -382,15 +432,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         drawerToggle.syncState();
-//        if (isFirebaseInitialized(this)) {
-//            FirebaseMessaging.getInstance().subscribeToTopic("all");
-//        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        /* Check if the device is running low on storage space */
         long freeMegabytes = GB.c();
         if (freeMegabytes < 100 && freeMegabytes > 0) {
             showNoticeNotEnoughFreeStorageSpace();
@@ -436,7 +482,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (Build.VERSION.SDK_INT > 29) {
             File optOutFile = new File(getFilesDir(), ".skip_all_files_access_notice");
             boolean granted = Environment.isExternalStorageManager();
-
             if (!optOutFile.exists() && !granted) {
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_mtrl_warning);
@@ -493,5 +538,4 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             storageAccessDenied.show();
         }
     }
-
 }

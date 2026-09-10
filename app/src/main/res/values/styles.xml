@@ -138,4 +138,9 @@
     <style name="DayDream.MaterialSwitch" parent="@style/Widget.Material3.CompoundButton.MaterialSwitch">
         <item name="thumbIcon">@drawable/switch_thumb_icon</item>
     </style>
+    
+    <style name="ShapeAppearance.FAB.Rounded" parent="">
+    <item name="cornerFamily">rounded</item>
+    <item name="cornerSize">32dp</item>
+</style>
 </resources>

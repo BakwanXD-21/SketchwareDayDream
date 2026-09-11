@@ -1,28 +1,29 @@
 package pro.sketchware.activities.main.activities;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.AnimatorSet;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -40,20 +41,16 @@ import a.a.a.DB;
 import a.a.a.GB;
 import dev.chrisbanes.insetter.Insetter;
 import extensions.anbui.daydream.configs.Configs;
-import extensions.anbui.daydream.file.FilesTools;
 import extensions.anbui.daydream.git.GitQuickLook;
 import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.ConfigActivity;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
-import pro.sketchware.activities.about.AboutActivity;
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
 import pro.sketchware.activities.main.fragments.projects_store.ProjectsStoreFragment;
 import pro.sketchware.databinding.MainBinding;
-import pro.sketchware.lib.base.BottomSheetDialogView;
 import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
@@ -63,17 +60,23 @@ import pro.sketchware.utility.UI;
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
     private static final String PROJECTS_STORE_FRAGMENT_TAG = "projects_store_fragment";
-    private ActionBarDrawerToggle drawerToggle;
+
+    // Lebar drawer dalam dp — harus sama dengan main.xml android:layout_width="280dp"
+    private static final float DRAWER_WIDTH_DP = 280f;
+
     private DB u;
     private Snackbar storageAccessDenied;
     private MainBinding binding;
-    private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
+    private boolean isDrawerOpen = false;
+    private float drawerWidthPx;
+
+    private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(false) {
         @Override
         public void handleOnBackPressed() {
-            setEnabled(false);
-            binding.drawerLayout.closeDrawers();
+            closeDrawer();
         }
     };
+
     private ProjectsFragment projectsFragment;
     private ProjectsStoreFragment projectsStoreFragment;
     private Fragment activeFragment;
@@ -86,7 +89,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     @IdRes
     private int currentNavItemId = R.id.item_projects;
 
+    // ── Permission callbacks ────────────────────────────────────────────────
+
     @Override
+    // Dipanggil setelah izin storage diberikan (request code 9501)
     public void g(int i) {
         if (i == 9501) {
             allFilesAccessCheck();
@@ -104,18 +110,18 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     }
 
     @Override
-    public void l() {
-    }
+    public void l() {}
 
     @Override
-    public void m() {
-    }
+    public void m() {}
 
     public void n() {
         if (activeFragment instanceof ProjectsFragment) {
             projectsFragment.refreshProjectsList();
         }
     }
+
+    // ── onActivityResult ────────────────────────────────────────────────────
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -134,7 +140,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     }
                     break;
                 case 212:
-                    if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty()
+                    if (!(data.getStringExtra("save_as_new_id") == null
+                            ? "" : data.getStringExtra("save_as_new_id")).isEmpty()
                             && isStoragePermissionGranted()) {
                         if (activeFragment instanceof ProjectsFragment) {
                             projectsFragment.refreshProjectsList();
@@ -148,11 +155,14 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        drawerToggle.onConfigurationChanged(newConfig);
+        // tidak ada drawerToggle lagi, tidak perlu sync
     }
+
+    // ── onCreate ────────────────────────────────────────────────────────────
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Splash screen — harus dipanggil SEBELUM super.onCreate
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         enableEdgeToEdgeNoContrast();
@@ -160,8 +170,26 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Toolbar hanya untuk ActionBarDrawerToggle, judul disembunyikan
+        // Toolbar hanya untuk icon hamburger (tidak pakai ActionBarDrawerToggle)
         setSupportActionBar(binding.toolbar);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle(null);
+
+        // Ganti icon hamburger menjadi "menu" dan handle klik untuk open/close drawer
+        binding.toolbar.setNavigationOnClickListener(v -> {
+            if (isDrawerOpen) closeDrawer();
+            else openDrawer();
+        });
+
+        // Konversi lebar drawer ke pixel
+        drawerWidthPx = DRAWER_WIDTH_DP * getResources().getDisplayMetrics().density;
+
+        // Pastikan drawer dimulai dari posisi tersembunyi
+        binding.leftDrawer.setTranslationX(-drawerWidthPx);
+
+        // Back press: tutup drawer
+        getOnBackPressedDispatcher().addCallback(this, closeDrawer);
+
         binding.statusBarOverlapper.setMinimumHeight(UI.getStatusBarHeight(this));
         UI.addSystemWindowInsetToPadding(binding.appbar, true, false, true, false);
 
@@ -175,39 +203,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             u.a("U1I0", Integer.valueOf(u1I0 + 1));
         }
 
-        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(null);
-
-        drawerToggle = new ActionBarDrawerToggle(
-                this, binding.drawerLayout, R.string.app_name, R.string.app_name);
-        binding.drawerLayout.addDrawerListener(drawerToggle);
-        binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
-            @Override
-            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
-            }
-
-            @Override
-            public void onDrawerOpened(@NonNull View drawerView) {
-                closeDrawer.setEnabled(true);
-                getOnBackPressedDispatcher().addCallback(closeDrawer);
-            }
-
-            @Override
-            public void onDrawerClosed(@NonNull View drawerView) {
-            }
-
-            @Override
-            public void onDrawerStateChanged(int newState) {
-            }
-        });
-
         // Hilangkan underline SearchView
         View searchPlate = binding.searchView.findViewById(androidx.appcompat.R.id.search_plate);
-        if (searchPlate != null) {
-            searchPlate.setBackgroundColor(Color.TRANSPARENT);
-        }
+        if (searchPlate != null) searchPlate.setBackgroundColor(Color.TRANSPARENT);
 
-        // Hubungkan SearchView ke ProjectsFragment
+        // SearchView → filter ProjectsFragment langsung, tanpa perlu ketuk icon
         binding.searchView.setOnQueryTextListener(
                 new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
                     @Override
@@ -227,8 +227,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
             showNoticeNeedStorageAccess();
-        }
-        if (hasStorageAccess) {
+        } else {
             allFilesAccessCheck();
         }
 
@@ -237,12 +236,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             if (data != null) {
                 new SingleCopyTask(this, new SingleCopyTask.CallBackTask() {
                     @Override
-                    public void onCopyPreExecute() {
-                    }
+                    public void onCopyPreExecute() {}
 
                     @Override
-                    public void onCopyProgressUpdate(int progress) {
-                    }
+                    public void onCopyProgressUpdate(int progress) {}
 
                     @Override
                     public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful,
@@ -312,10 +309,49 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         DRSetup.startNow(this);
     }
 
-    // ── FAB expand/collapse ──────────────────────────────────────────────────
+    // ── Drawer open/close dengan animasi slide (gaya DeepSeek) ─────────────
+
+    private void openDrawer() {
+        if (isDrawerOpen) return;
+        isDrawerOpen = true;
+        closeDrawer.setEnabled(true);
+
+        binding.leftDrawer.setVisibility(View.VISIBLE);
+        binding.leftDrawer.animate()
+                .translationX(0f)
+                .setDuration(280)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+
+        // Geser konten utama ke kanan sejauh lebar drawer agar sejajar
+        binding.layoutCoordinator.animate()
+                .translationX(drawerWidthPx)
+                .setDuration(280)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+    }
+
+    private void closeDrawer() {
+        if (!isDrawerOpen) return;
+        isDrawerOpen = false;
+        closeDrawer.setEnabled(false);
+
+        binding.leftDrawer.animate()
+                .translationX(-drawerWidthPx)
+                .setDuration(240)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .start();
+
+        binding.layoutCoordinator.animate()
+                .translationX(0f)
+                .setDuration(240)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .start();
+    }
+
+    // ── FAB expand/collapse dengan animasi pop ──────────────────────────────
 
     private void setupFab() {
-        // Navigation bar inset untuk semua FAB agar tidak tertutup gesture bar
         Insetter.builder()
                 .margin(WindowInsetsCompat.Type.navigationBars())
                 .applyToView(binding.createNewProject);
@@ -326,57 +362,94 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 .margin(WindowInsetsCompat.Type.navigationBars())
                 .applyToView(binding.fabCreate);
 
-        // FAB utama: toggle expand/collapse
         binding.createNewProject.setOnClickListener(v -> toggleFab());
 
-        // FAB Restore
         binding.fabRestore.setOnClickListener(v -> {
             collapseFab();
             if (projectsFragment != null) projectsFragment.restoreProject();
         });
 
-        // FAB Create New Project
         binding.fabCreate.setOnClickListener(v -> {
             collapseFab();
             if (projectsFragment != null) projectsFragment.toProjectSettingsActivity();
         });
 
-        // Overlay: klik di luar FAB → collapse
         binding.fabOverlay.setOnClickListener(v -> collapseFab());
     }
 
     private void toggleFab() {
-        if (isFabExpanded) {
-            collapseFab();
-        } else {
-            expandFab();
-        }
+        if (isFabExpanded) collapseFab();
+        else expandFab();
     }
 
     private void expandFab() {
         isFabExpanded = true;
+
+        // Tampilkan overlay
         binding.fabOverlay.setVisibility(View.VISIBLE);
-        binding.fabRestore.setVisibility(View.VISIBLE);
-        binding.fabCreate.setVisibility(View.VISIBLE);
-        binding.fabRestore.extend();
-        binding.fabCreate.extend();
+        binding.fabOverlay.setAlpha(0f);
+        binding.fabOverlay.animate().alpha(1f).setDuration(200).start();
+
+        // Animasikan sub-FAB dengan delay bertahap (stagger) + overshoot
+        animateSubFabIn(binding.fabRestore, 0);
+        animateSubFabIn(binding.fabCreate, 60);
+    }
+
+    private void animateSubFabIn(View fab, long delayMs) {
+        fab.setVisibility(View.VISIBLE);
+        fab.setAlpha(0f);
+        fab.setScaleX(0.5f);
+        fab.setScaleY(0.5f);
+        fab.setTranslationY(40f);
+
+        fab.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .setStartDelay(delayMs)
+                .setInterpolator(new OvershootInterpolator(1.4f))
+                .start();
     }
 
     private void collapseFab() {
+        if (!isFabExpanded) return;
         isFabExpanded = false;
-        binding.fabOverlay.setVisibility(View.GONE);
-        binding.fabRestore.setVisibility(View.GONE);
-        binding.fabCreate.setVisibility(View.GONE);
+
+        // Fade out overlay
+        binding.fabOverlay.animate()
+                .alpha(0f)
+                .setDuration(180)
+                .withEndAction(() -> binding.fabOverlay.setVisibility(View.GONE))
+                .start();
+
+        // Animate sub-FAB keluar
+        animateSubFabOut(binding.fabCreate, 0);
+        animateSubFabOut(binding.fabRestore, 40);
+    }
+
+    private void animateSubFabOut(View fab, long delayMs) {
+        fab.animate()
+                .alpha(0f)
+                .scaleX(0.5f)
+                .scaleY(0.5f)
+                .translationY(20f)
+                .setDuration(200)
+                .setStartDelay(delayMs)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .withEndAction(() -> {
+                    fab.setVisibility(View.GONE);
+                    fab.setTranslationY(0f);
+                })
+                .start();
     }
 
     // ────────────────────────────────────────────────────────────────────────
 
     private Fragment getFragmentForNavId(int navItemId) {
-        if (navItemId == R.id.item_projects) {
-            return projectsFragment;
-        } else if (navItemId == R.id.item_sketchub) {
-            return projectsStoreFragment;
-        }
+        if (navItemId == R.id.item_projects) return projectsFragment;
+        else if (navItemId == R.id.item_sketchub) return projectsStoreFragment;
         throw new IllegalArgumentException();
     }
 
@@ -418,7 +491,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentTransaction transaction = fm.beginTransaction();
 
         binding.createNewProject.hide();
-        collapseFab(); // tutup sub-FAB saat pindah tab
+        collapseFab();
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
             shouldShow = false;
@@ -432,40 +505,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         currentNavItemId = R.id.item_sketchub;
     }
 
-    @NonNull
-    private BottomSheetDialogView getBottomSheetDialogView() {
-        BottomSheetDialogView bottomSheetDialog = new BottomSheetDialogView(this);
-        bottomSheetDialog.setTitle("Major changes in v7.0.0");
-        bottomSheetDialog.setDescription("""
-                There have been major changes since v6.3.0 fix1, \
-                and it's very important to know them all if you want your projects to still work.
-                
-                You can view all changes whenever you want at the About Sketchware Pro screen.""");
-
-        bottomSheetDialog.setPositiveButton("View changes", (dialog, which) -> {
-            ConfigActivity.setSetting(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER, true);
-            Intent launcher = new Intent(this, AboutActivity.class);
-            launcher.putExtra("select", "changelog");
-            startActivity(launcher);
-        });
-        bottomSheetDialog.setCancelable(false);
-        return bottomSheetDialog;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
-        if (drawerToggle.onOptionsItemSelected(item)) {
-            return true;
-        } else {
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-    @Override
-    public void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        drawerToggle.syncState();
-    }
+    // ── onResume — changelog bottomsheet DIHAPUS ────────────────────────────
 
     @Override
     public void onResume() {
@@ -484,34 +524,18 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         mAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle);
 
         if (needRefreshProjectList) {
-            projectsFragment.refreshProjectsList();
+            if (projectsFragment != null) projectsFragment.refreshProjectsList();
             needRefreshProjectList = false;
         }
 
         GitQuickLook.cleanUp(this);
 
-        if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER)
-                && FilesTools.isPermissionGranted(this)) {
-            BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();
-            bottomSheetDialog.getPositiveButton().setEnabled(false);
-
-            CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
-                @Override
-                public void onTick(long millisUntilFinished) {
-                    bottomSheetDialog.setPositiveButtonText(millisUntilFinished / 1000 + "");
-                }
-
-                @Override
-                public void onFinish() {
-                    bottomSheetDialog.setPositiveButtonText("View changes");
-                    bottomSheetDialog.getPositiveButton().setEnabled(true);
-                }
-            };
-            countDownTimer.start();
-
-            if (!isFinishing()) bottomSheetDialog.show();
-        }
+        // ── Changelog BottomSheet DIHAPUS ──
+        // Tidak ada lagi popup "Major changes in v7.0.0" yang mengganggu saat pertama buka app.
+        // Jika ingin menampilkan changelog, gunakan menu About saja.
     }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
     private void allFilesAccessCheck() {
         if (Build.VERSION.SDK_INT > 29) {

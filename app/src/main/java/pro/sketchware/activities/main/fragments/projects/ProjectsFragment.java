@@ -2,21 +2,18 @@ package pro.sketchware.activities.main.fragments.projects;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RadioButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.adapters.ProjectsAdapter;
 import com.besome.sketch.design.DesignActivity;
@@ -41,7 +38,6 @@ import mod.hey.studios.project.backup.BackupRestoreManager;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
-import pro.sketchware.databinding.SortProjectDialogBinding;
 import pro.sketchware.utility.UI;
 
 public class ProjectsFragment extends DA {
@@ -49,6 +45,7 @@ public class ProjectsFragment extends DA {
     private final List<HashMap<String, Object>> projectsList = new ArrayList<>();
     private MyprojectsBinding binding;
     private ProjectsAdapter projectsAdapter;
+
     public final ActivityResultLauncher<Intent> openProjectSettings = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
@@ -64,7 +61,10 @@ public class ProjectsFragment extends DA {
                     }
                 }
             });
+
     private DB preference;
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,16 +76,7 @@ public class ProjectsFragment extends DA {
     }
 
     @Override
-    public void b(int requestCode) {
-    }
-
-    public void toDesignActivity(String sc_id) {
-        Intent intent = new Intent(requireContext(), DesignActivity.class);
-        ProjectTracker.setScId(sc_id);
-        intent.putExtra("sc_id", sc_id);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        requireActivity().startActivity(intent);
-    }
+    public void b(int requestCode) {}
 
     @Override
     public void c(int requestCode) {
@@ -96,16 +87,20 @@ public class ProjectsFragment extends DA {
 
     @Override
     public void d() {
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).s();
-        }
+        if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).s();
     }
 
     @Override
     public void e() {
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).s();
-        }
+        if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).s();
+    }
+
+    public void toDesignActivity(String sc_id) {
+        Intent intent = new Intent(requireContext(), DesignActivity.class);
+        ProjectTracker.setScId(sc_id);
+        intent.putExtra("sc_id", sc_id);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        requireActivity().startActivity(intent);
     }
 
     public void toProjectSettingsActivity() {
@@ -140,56 +135,66 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
 
-        // Menambahkan ItemDecoration untuk jarak antar item list menjadi 10dp
-        final int itemSpacingPx = (int) (10 * requireContext().getResources().getDisplayMetrics().density);
-        binding.myprojects.addItemDecoration(new RecyclerView.ItemDecoration() {
-            @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                outRect.bottom = itemSpacingPx;
-            }
-        });
+        // ── Tidak ada ItemDecoration tambahan — jarak antar item kembali ke default ──
 
-        // Sembunyikan button Restore Project dan Clone Project pada card special action
+        // Sembunyikan special action container (Restore / Clone card di atas list)
         if (binding.specialAction != null) {
             binding.specialAction.getRoot().setVisibility(View.GONE);
             binding.specialActionContainer.setVisibility(View.GONE);
         }
 
-        refreshProjectsList();
         UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
+        // Sort button — gunakan icon category (@drawable/ic_baseline_category_24 atau
+        // ic_mtrl_category, sesuaikan dengan yang tersedia di project)
+        binding.iconSort.setImageResource(R.drawable.ic_mtrl_sort); // ganti ke ic_baseline_category_24 jika ada
         binding.iconSort.setOnClickListener(v -> showProjectSortingDialog());
+
+        // ── Load langsung saat buka app, selama izin sudah diberikan ──
+        // Tidak perlu menyentuh SearchView terlebih dahulu.
+        binding.myprojects.post(this::refreshProjectsList);
     }
+
+    // ── Search filter (dipanggil dari MainActivity SearchView) ───────────────
 
     public void filterFromSearch(String query) {
         if (binding == null || projectsAdapter == null) return;
         projectsAdapter.filterData(query);
-        if (query.isEmpty()) {
+        if (query == null || query.isEmpty()) {
             binding.titleContainer.setVisibility(View.VISIBLE);
         } else {
             binding.titleContainer.setVisibility(View.GONE);
         }
     }
 
+    // ── Load projects ────────────────────────────────────────────────────────
+
     public void refreshProjectsList() {
         if (!isAdded()) return;
+
+        // Jika belum ada izin, tampilkan snackbar minta izin lalu berhenti
         if (!c()) {
-            if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-            if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
+            if (binding != null && binding.swipeRefresh.isRefreshing()) {
+                binding.swipeRefresh.setRefreshing(false);
+            }
+            if (binding != null && binding.loadingContainer.getVisibility() == View.VISIBLE) {
                 binding.loadingContainer.setVisibility(View.GONE);
             }
             ((MainActivity) requireActivity()).s();
             return;
         }
 
+        // Punya izin → langsung muat project list
         executorService.execute(() -> {
             List<HashMap<String, Object>> loadedProjects = lC.a();
-            loadedProjects.sort(new ProjectComparator(preference.d("sortBy"), preference.a("pinnedProject", "-1")));
+            loadedProjects.sort(
+                    new ProjectComparator(preference.d("sortBy"), preference.a("pinnedProject", "-1")));
 
-            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
+            DiffUtil.DiffResult diffResult =
+                    DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
 
             requireActivity().runOnUiThread(() -> {
                 if (binding == null) return;
@@ -201,7 +206,7 @@ public class ProjectsFragment extends DA {
                 projectsList.clear();
                 projectsList.addAll(loadedProjects);
                 diffResult.dispatchUpdatesTo(projectsAdapter);
-                
+                // Terapkan filter search yang sedang aktif (jika ada)
                 projectsAdapter.filterData("");
             });
         });
@@ -212,6 +217,7 @@ public class ProjectsFragment extends DA {
             HashMap<String, Object> newProject = lC.b(sc_id);
             if (newProject != null) {
                 requireActivity().runOnUiThread(() -> {
+                    if (binding == null) return;
                     projectsList.add(0, newProject);
                     projectsAdapter.notifyDataSetChanged();
                     binding.myprojects.scrollToPosition(0);
@@ -235,72 +241,78 @@ public class ProjectsFragment extends DA {
         });
     }
 
+    // ── Sort dialog — 4 pilihan bersih: A→Z, Z→A, Oldest, Newest ────────────
+
     private void showProjectSortingDialog() {
-        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(requireActivity());
-        dialog.setTitle("Sort options");
+        // Label bersih tanpa simbol jelek
+        final String[] sortLabels = {"A → Z", "Z → A", "Oldest first", "Newest first"};
 
-        SortProjectDialogBinding dialogBinding = SortProjectDialogBinding.inflate(LayoutInflater.from(requireActivity()));
-        RadioButton sortByName = dialogBinding.sortByName;
-        RadioButton sortByID = dialogBinding.sortByID;
-        RadioButton sortOrderAsc = dialogBinding.sortOrderAsc;
-        RadioButton sortOrderDesc = dialogBinding.sortOrderDesc;
+        // Mapping ke nilai ProjectComparator:
+        //   A→Z  = SORT_BY_NAME | SORT_ORDER_ASCENDING
+        //   Z→A  = SORT_BY_NAME | SORT_ORDER_DESCENDING
+        //   Old  = SORT_BY_ID   | SORT_ORDER_ASCENDING
+        //   New  = SORT_BY_ID   | SORT_ORDER_DESCENDING
+        final int[] sortValues = {
+                ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_ASCENDING,
+                ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_DESCENDING,
+                ProjectComparator.SORT_BY_ID   | ProjectComparator.SORT_ORDER_ASCENDING,
+                ProjectComparator.SORT_BY_ID   | ProjectComparator.SORT_ORDER_DESCENDING
+        };
 
-        int storedValue = preference.a("sortBy", ProjectComparator.DEFAULT);
-        if ((storedValue & ProjectComparator.SORT_BY_NAME) == ProjectComparator.SORT_BY_NAME) {
-            sortByName.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_BY_ID) == ProjectComparator.SORT_BY_ID) {
-            sortByID.setChecked(true);
+        int currentValue = preference.a("sortBy", ProjectComparator.DEFAULT);
+
+        // Cari indeks yang cocok dengan nilai saat ini
+        int checkedItem = 0; // default A→Z
+        for (int i = 0; i < sortValues.length; i++) {
+            if (sortValues[i] == currentValue) {
+                checkedItem = i;
+                break;
+            }
         }
-        if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
-            sortOrderAsc.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_ORDER_DESCENDING) == ProjectComparator.SORT_ORDER_DESCENDING) {
-            sortOrderDesc.setChecked(true);
-        }
 
-        dialog.setView(dialogBinding.getRoot());
-        dialog.setPositiveButton("Save", (v, which) -> {
-            int sortValue = 0;
-            if (sortByName.isChecked()) sortValue |= ProjectComparator.SORT_BY_NAME;
-            if (sortByID.isChecked()) sortValue |= ProjectComparator.SORT_BY_ID;
-            if (sortOrderAsc.isChecked()) sortValue |= ProjectComparator.SORT_ORDER_ASCENDING;
-            if (sortOrderDesc.isChecked()) sortValue |= ProjectComparator.SORT_ORDER_DESCENDING;
-            preference.a("sortBy", sortValue, true);
-            v.dismiss();
-            refreshProjectsList();
-        });
-        dialog.setNegativeButton("Cancel", null);
-        dialog.show();
+        final int[] selected = {checkedItem};
+
+        new MaterialAlertDialogBuilder(requireActivity())
+                .setTitle("Sort projects")
+                // Icon category untuk header dialog — mengganti icon •aZ• jelek
+                .setIcon(R.drawable.ic_mtrl_sort) // ganti ke ic_baseline_category_24 jika drawable tersedia
+                .setSingleChoiceItems(sortLabels, checkedItem, (dialog, which) -> {
+                    selected[0] = which;
+                })
+                .setPositiveButton("Apply", (dialog, which) -> {
+                    preference.a("sortBy", sortValues[selected[0]], true);
+                    dialog.dismiss();
+                    refreshProjectsList();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
+
+    // ── DiffUtil ─────────────────────────────────────────────────────────────
 
     private static class ProjectDiffCallback extends DiffUtil.Callback {
         private final List<HashMap<String, Object>> oldList;
         private final List<HashMap<String, Object>> newList;
 
-        public ProjectDiffCallback(List<HashMap<String, Object>> oldList, List<HashMap<String, Object>> newList) {
+        public ProjectDiffCallback(List<HashMap<String, Object>> oldList,
+                List<HashMap<String, Object>> newList) {
             this.oldList = oldList;
             this.newList = newList;
         }
 
+        @Override public int getOldListSize() { return oldList.size(); }
+        @Override public int getNewListSize() { return newList.size(); }
+
         @Override
-        public int getOldListSize() {
-            return oldList.size();
+        public boolean areItemsTheSame(int oldPos, int newPos) {
+            String oldId = (String) oldList.get(oldPos).get("sc_id");
+            String newId = (String) newList.get(newPos).get("sc_id");
+            return oldId != null && oldId.equals(newId);
         }
 
         @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            String oldId = (String) oldList.get(oldItemPosition).get("sc_id");
-            String newId = (String) newList.get(newItemPosition).get("sc_id");
-            return oldId.equals(newId);
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
+        public boolean areContentsTheSame(int oldPos, int newPos) {
+            return oldList.get(oldPos).equals(newList.get(newPos));
         }
     }
 }

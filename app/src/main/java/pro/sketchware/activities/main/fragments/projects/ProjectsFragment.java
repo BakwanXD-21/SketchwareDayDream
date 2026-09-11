@@ -201,6 +201,8 @@ public class ProjectsFragment extends DA {
                 projectsList.clear();
                 projectsList.addAll(loadedProjects);
                 diffResult.dispatchUpdatesTo(projectsAdapter);
+                
+                projectsAdapter.filterData("");
             });
         });
     }

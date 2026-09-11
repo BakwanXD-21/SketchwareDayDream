@@ -30,10 +30,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="?colorSurfaceContainer"
-                app:cardCornerRadius="32dp"
+                app:cardCornerRadius="21dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
@@ -44,8 +44,8 @@
                     android:orientation="horizontal"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:paddingTop="2dp"
-                    android:paddingBottom="2dp">
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp">
 
                     <!-- Toolbar untuk drawer toggle -->
                     <com.google.android.material.appbar.MaterialToolbar
@@ -63,18 +63,6 @@
                         app:iconifiedByDefault="false"
                         app:searchIcon="@null"
                         app:queryHint="Search for projects..." />
-
-                    <!-- Tombol Close untuk keluar dari aplikasi -->
-                    <ImageButton
-                        android:id="@+id/btn_close_app"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Close App"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_close_white_36dp"
-                        app:tint="?attr/colorOnSurface" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

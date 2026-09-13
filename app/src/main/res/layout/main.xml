@@ -102,7 +102,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:text="Restore"
-                app:icon="@drawable/ic_mtrl_restore"
+                app:icon="@android:drawable/ic_menu_revert"
                 tools:ignore="ContentDescription" />
 
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton

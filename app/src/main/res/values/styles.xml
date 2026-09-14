@@ -142,4 +142,8 @@
     <style name="ShapeAppearance.FAB.RoundedBox" parent="ShapeAppearance.Material3.Corner.Small">
         <item name="cornerSize">16dp</item>
     </style>
+    
+    <style name="RoundedFabStyle" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="shapeAppearance">@style/ShapeAppearance.FAB.RoundedBox</item>
+    </style>
 </resources>

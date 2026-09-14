@@ -29,6 +29,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -268,17 +269,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         }
 
-        binding.bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.item_projects) {
-                navigateToProjectsFragment();
-                return true;
-            } else if (id == R.id.item_sketchub) {
-                navigateToSketchubFragment();
-                return true;
-            }
-            return false;
-        });
+        // Dispatch listener untuk close FAB ketika diklik di area lain
+        binding.container.setOnClickListener(v -> closeFABs());
 
         if (savedInstanceState != null) {
             projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
@@ -299,6 +291,19 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
         Configs.mainActivity = this;
         DRSetup.startNow(this);
+    }
+
+    /**
+     * Method untuk menutup FAB dengan animasi
+     */
+    private void closeFABs() {
+        ExtendedFloatingActionButton createFab = binding.createNewProject;
+        ExtendedFloatingActionButton restoreFab = binding.restoreProject;
+        
+        if (createFab.isExtended() || restoreFab.isExtended()) {
+            createFab.shrink();
+            restoreFab.shrink();
+        }
     }
 
     private Fragment getFragmentForNavId(int navItemId) {

@@ -175,6 +175,7 @@ public class ProjectsFragment extends DA {
         binding.iconSort.setVisibility(View.GONE);
 
         // The old inline "restore" row is removed in favor of the Restore FAB above.
+        // Restore hanya ada di FAB sekarang, bukan di special action container
         binding.specialActionContainer.setVisibility(View.GONE);
 
         RestoreProject.setupDropFileTo(getActivity(), binding.getRoot());

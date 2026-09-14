@@ -52,65 +52,38 @@
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-<!--        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton-->
-<!--            android:id="@+id/create_new_project"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_gravity="end|bottom"-->
-<!--            android:layout_marginEnd="16dp"-->
-<!--            android:layout_marginBottom="96dp"-->
-<!--            android:text="New project"-->
-<!--            app:icon="@drawable/ic_mtrl_add"-->
-<!--            app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior"-->
-<!--            tools:ignore="ContentDescription" />-->
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.divider.MaterialDivider
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:dividerColor="?attr/colorSurfaceContainerHighest" />
-
-            <com.google.android.material.bottomnavigation.BottomNavigationView
-                android:id="@+id/bottom_nav"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                app:menu="@menu/main_menu" />
-
-        </LinearLayout>
-
+        <!-- FAB Container with elevation 8dp, proper margins for elevation and navbar spacing -->
         <LinearLayout
             android:id="@+id/fab_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_margin="16dp"
+            android:paddingBottom="8dp"
             android:orientation="vertical"
             android:gravity="end"
+            app:elevation="8dp"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
 
+            <!-- Restore FAB dengan icon folder dan rounded box style -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/restore_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:text="Restore"
-                app:icon="@android:drawable/ic_menu_revert"
+                app:icon="@drawable/ic_mtrl_folder"
+                app:shapeAppearanceOverlay="@style/RoundedFabStyle"
                 tools:ignore="ContentDescription" />
 
+            <!-- Create FAB -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/create_new_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Create"
                 app:icon="@drawable/ic_mtrl_add"
+                app:shapeAppearanceOverlay="@style/RoundedFabStyle"
                 tools:ignore="ContentDescription" />
 
         </LinearLayout>

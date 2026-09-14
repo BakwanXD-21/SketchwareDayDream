@@ -25,17 +25,17 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build both flavors
+      - name: Build SDK 26 and SDK 33 flavors only
         env:
           GRADLE_OPTS: "-Xmx4096m"
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleAndroid26Release assembleAndroid33Release
 
       - name: List generated APKs
         run: |
           echo "=== Generated APKs ==="
-          ls -la app/build/outputs/apk/*/release/*.apk || echo "No APKs found"
+          ls -la app/build/outputs/apk/android26/release/*.apk app/build/outputs/apk/android33/release/*.apk || echo "No APKs found"
 
       - name: Upload APK Android 26
         uses: actions/upload-artifact@v4

@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
@@ -29,7 +30,6 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -269,9 +269,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         }
 
-        // Dispatch listener untuk close FAB ketika diklik di area lain
-        binding.container.setOnClickListener(v -> closeFABs());
-
         if (savedInstanceState != null) {
             projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
             projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);
@@ -294,16 +291,28 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     }
 
     /**
-     * Method untuk menutup FAB dengan animasi
+     * Menutup menu FAB (Create/Restore) ketika user menyentuh di luar area FAB.
+     * Dipanggil dari dispatchTouchEvent agar "klik di mana saja" bisa dismiss FAB.
      */
-    private void closeFABs() {
-        ExtendedFloatingActionButton createFab = binding.createNewProject;
-        ExtendedFloatingActionButton restoreFab = binding.restoreProject;
-        
-        if (createFab.isExtended() || restoreFab.isExtended()) {
-            createFab.shrink();
-            restoreFab.shrink();
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN
+                && activeFragment instanceof ProjectsFragment
+                && projectsFragment != null
+                && projectsFragment.isFabMenuExpanded()
+                && !isTouchInsideView(binding.fabContainer, ev.getRawX(), ev.getRawY())) {
+            projectsFragment.collapseFabMenu();
         }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private boolean isTouchInsideView(View view, float rawX, float rawY) {
+        if (view == null || view.getVisibility() != View.VISIBLE) return false;
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        float x = rawX - location[0];
+        float y = rawY - location[1];
+        return x >= 0 && x <= view.getWidth() && y >= 0 && y <= view.getHeight();
     }
 
     private Fragment getFragmentForNavId(int navItemId) {
@@ -330,8 +339,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
 
-        binding.createNewProject.show();
-        binding.restoreProject.show();
+        binding.fabMain.show();
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_FRAGMENT_TAG) == null) {
             shouldShow = false;
@@ -353,8 +361,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
 
-        binding.createNewProject.hide();
-        binding.restoreProject.hide();
+        if (projectsFragment != null) projectsFragment.collapseFabMenu();
+        binding.fabMain.hide();
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
             shouldShow = false;

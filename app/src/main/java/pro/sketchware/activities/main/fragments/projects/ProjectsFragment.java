@@ -1,23 +1,24 @@
 package pro.sketchware.activities.main.fragments.projects;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.ImageView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
-import androidx.core.view.MenuProvider;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DiffUtil;
@@ -27,6 +28,7 @@ import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.transition.MaterialFadeThrough;
 
 import java.util.ArrayList;
@@ -69,8 +71,12 @@ public class ProjectsFragment extends DA {
         }
     });
     private DB preference;
-    private SearchView projectsSearchView;
-    private MenuProvider menuProvider;
+    private EditText searchEditText;
+    private TextWatcher searchTextWatcher;
+    private FloatingActionButton fabMain;
+    private ExtendedFloatingActionButton createFab;
+    private ExtendedFloatingActionButton restoreFab;
+    private boolean fabMenuExpanded = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -133,6 +139,7 @@ public class ProjectsFragment extends DA {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        detachSearchListener();
         binding = null; // avoid memory leaks
     }
 
@@ -140,12 +147,22 @@ public class ProjectsFragment extends DA {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         preference = new DB(requireContext(), "project");
 
-        ExtendedFloatingActionButton fab = requireActivity().findViewById(R.id.create_new_project);
-        fab.setOnClickListener((v) -> toProjectSettingsActivity());
-        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fab);
+        fabMain = requireActivity().findViewById(R.id.fab_main);
+        createFab = requireActivity().findViewById(R.id.create_new_project);
+        restoreFab = requireActivity().findViewById(R.id.restore_project);
 
-        ExtendedFloatingActionButton restoreFab = requireActivity().findViewById(R.id.restore_project);
-        restoreFab.setOnClickListener((v) -> restoreProject());
+        fabMain.setOnClickListener(v -> toggleFabMenu());
+        createFab.setOnClickListener(v -> {
+            collapseFabMenu();
+            toProjectSettingsActivity();
+        });
+        restoreFab.setOnClickListener(v -> {
+            collapseFabMenu();
+            restoreProject();
+        });
+
+        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fabMain);
+        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(createFab);
         Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(restoreFab);
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
@@ -161,12 +178,8 @@ public class ProjectsFragment extends DA {
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
         binding.nestedScroll.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (scrollY > oldScrollY) {
-                fab.shrink();
-                restoreFab.shrink();
-            } else if (scrollY < oldScrollY) {
-                fab.extend();
-                restoreFab.extend();
+            if (scrollY != oldScrollY && fabMenuExpanded) {
+                collapseFabMenu();
             }
         });
 
@@ -180,37 +193,102 @@ public class ProjectsFragment extends DA {
 
         RestoreProject.setupDropFileTo(getActivity(), binding.getRoot());
 
-        menuProvider = new MenuProvider() {
-            @Override
-            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.projects_fragment_menu, menu);
-                projectsSearchView = (SearchView) menu.findItem(R.id.searchProjects).getActionView();
-                if (projectsSearchView != null) {
-                    projectsSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                        @Override
-                        public boolean onQueryTextChange(String s) {
-                            projectsAdapter.filterData(s);
+        searchEditText = requireActivity().findViewById(R.id.search_edit_text);
+        ImageView searchIcon = requireActivity().findViewById(R.id.search_icon);
+        if (searchIcon != null) {
+            searchIcon.setOnClickListener(v -> {
+                if (searchEditText == null) return;
+                searchEditText.requestFocus();
+                InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
+            });
+        }
+        attachSearchListener();
+    }
 
-                            binding.titleContainer.setVisibility(s.isEmpty() ? View.VISIBLE : View.GONE);
-
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onQueryTextSubmit(String s) {
-                            return false;
-                        }
-                    });
+    private void attachSearchListener() {
+        if (searchEditText == null) return;
+        if (searchTextWatcher == null) {
+            searchTextWatcher = new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                 }
-            }
 
-            @Override
-            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                return false;
-            }
-        };
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (projectsAdapter == null || binding == null) return;
+                    String query = s.toString();
+                    projectsAdapter.filterData(query);
+                    binding.titleContainer.setVisibility(query.isEmpty() ? View.VISIBLE : View.GONE);
+                }
 
-        requireActivity().addMenuProvider(menuProvider);
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            };
+        }
+        searchEditText.addTextChangedListener(searchTextWatcher);
+    }
+
+    private void detachSearchListener() {
+        if (searchEditText != null && searchTextWatcher != null) {
+            searchEditText.removeTextChangedListener(searchTextWatcher);
+        }
+    }
+
+    /**
+     * Buka menu FAB: tampilkan opsi Create & Restore dengan animasi, dan putar icon fab utama.
+     */
+    private void toggleFabMenu() {
+        if (fabMenuExpanded) {
+            collapseFabMenu();
+        } else {
+            expandFabMenu();
+        }
+    }
+
+    private void expandFabMenu() {
+        if (fabMenuExpanded || fabMain == null) return;
+        fabMenuExpanded = true;
+        fabMain.animate().rotation(45f).setDuration(200).start();
+        showFabOption(restoreFab);
+        showFabOption(createFab);
+    }
+
+    /**
+     * Tutup menu FAB. Dipanggil saat: pilih salah satu opsi, scroll list,
+     * pindah tab, atau klik di luar area FAB (lihat MainActivity#dispatchTouchEvent).
+     */
+    public void collapseFabMenu() {
+        if (!fabMenuExpanded || fabMain == null) return;
+        fabMenuExpanded = false;
+        fabMain.animate().rotation(0f).setDuration(200).start();
+        hideFabOption(restoreFab);
+        hideFabOption(createFab);
+    }
+
+    public boolean isFabMenuExpanded() {
+        return fabMenuExpanded;
+    }
+
+    private void showFabOption(View view) {
+        if (view == null) return;
+        view.animate().cancel();
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(0f);
+        view.setTranslationY(40f);
+        view.animate().alpha(1f).translationY(0f).setDuration(200).start();
+    }
+
+    private void hideFabOption(View view) {
+        if (view == null) return;
+        view.animate().cancel();
+        view.animate()
+                .alpha(0f)
+                .translationY(40f)
+                .setDuration(150)
+                .withEndAction(() -> view.setVisibility(View.GONE))
+                .start();
     }
 
     @Override
@@ -218,9 +296,10 @@ public class ProjectsFragment extends DA {
         super.onHiddenChanged(hidden);
         if (getActivity() == null) return;
         if (hidden) {
-            requireActivity().removeMenuProvider(menuProvider);
+            collapseFabMenu();
+            detachSearchListener();
         } else {
-            requireActivity().addMenuProvider(menuProvider);
+            attachSearchListener();
         }
     }
 
@@ -250,8 +329,8 @@ public class ProjectsFragment extends DA {
                 projectsList.clear();
                 projectsList.addAll(loadedProjects);
                 diffResult.dispatchUpdatesTo(projectsAdapter);
-                if (projectsSearchView != null)
-                    projectsAdapter.filterData(projectsSearchView.getQuery().toString());
+                if (searchEditText != null)
+                    projectsAdapter.filterData(searchEditText.getText().toString());
             });
         });
     }

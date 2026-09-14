@@ -34,14 +34,40 @@
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="4dp"
-                    tools:menu="@menu/projects_fragment_menu">
+                    android:layout_marginHorizontal="4dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Search for projects..."
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="4dp">
+
+                        <EditText
+                            android:id="@+id/search_edit_text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="Search for projects..."
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            android:textColor="?attr/colorOnSurface"
+                            android:inputType="text"
+                            android:maxLines="1"
+                            android:imeOptions="actionSearch" />
+
+                        <ImageView
+                            android:id="@+id/search_icon"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:padding="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_mtrl_search"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:contentDescription="@null" />
+
+                    </LinearLayout>
                 </com.google.android.material.appbar.MaterialToolbar>
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.AppBarLayout>
@@ -65,24 +91,37 @@
             app:elevation="8dp"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
 
-            <!-- Restore FAB dengan icon folder dan rounded box style -->
+            <!-- Restore option: muncul saat fab utama di-expand. Tanpa icon folder dulu. -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/restore_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:text="Restore"
-                app:icon="@drawable/ic_mtrl_folder"
+                android:visibility="gone"
+                android:alpha="0"
                 app:shapeAppearanceOverlay="@style/RoundedFabStyle"
                 tools:ignore="ContentDescription" />
 
-            <!-- Create FAB -->
+            <!-- Create option: muncul saat fab utama di-expand -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/create_new_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
                 android:text="Create"
+                android:visibility="gone"
+                android:alpha="0"
                 app:icon="@drawable/ic_mtrl_add"
+                app:shapeAppearanceOverlay="@style/RoundedFabStyle"
+                tools:ignore="ContentDescription" />
+
+            <!-- FAB utama: toggle menu Create/Restore -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_main"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_mtrl_add"
                 app:shapeAppearanceOverlay="@style/RoundedFabStyle"
                 tools:ignore="ContentDescription" />
 

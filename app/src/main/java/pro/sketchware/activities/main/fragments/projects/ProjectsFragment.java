@@ -28,7 +28,6 @@ import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.transition.MaterialFadeThrough;
 
 import java.util.ArrayList;
@@ -73,7 +72,7 @@ public class ProjectsFragment extends DA {
     private DB preference;
     private EditText searchEditText;
     private TextWatcher searchTextWatcher;
-    private FloatingActionButton fabMain;
+    private ExtendedFloatingActionButton fabMain;
     private ExtendedFloatingActionButton createFab;
     private ExtendedFloatingActionButton restoreFab;
     private boolean fabMenuExpanded = false;
@@ -250,9 +249,10 @@ public class ProjectsFragment extends DA {
     private void expandFabMenu() {
         if (fabMenuExpanded || fabMain == null) return;
         fabMenuExpanded = true;
-        fabMain.animate().rotation(45f).setDuration(200).start();
-        showFabOption(restoreFab);
+        fabMain.setIconResource(R.drawable.ic_mtrl_close);
+        fabMain.shrink();
         showFabOption(createFab);
+        showFabOption(restoreFab);
     }
 
     /**
@@ -262,9 +262,10 @@ public class ProjectsFragment extends DA {
     public void collapseFabMenu() {
         if (!fabMenuExpanded || fabMain == null) return;
         fabMenuExpanded = false;
-        fabMain.animate().rotation(0f).setDuration(200).start();
-        hideFabOption(restoreFab);
+        fabMain.setIconResource(R.drawable.ic_mtrl_add);
+        fabMain.extend();
         hideFabOption(createFab);
+        hideFabOption(restoreFab);
     }
 
     public boolean isFabMenuExpanded() {
@@ -276,8 +277,9 @@ public class ProjectsFragment extends DA {
         view.animate().cancel();
         view.setVisibility(View.VISIBLE);
         view.setAlpha(0f);
-        view.setTranslationY(40f);
-        view.animate().alpha(1f).translationY(0f).setDuration(200).start();
+        view.setScaleX(0f);
+        view.setScaleY(0f);
+        view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200).start();
     }
 
     private void hideFabOption(View view) {
@@ -285,7 +287,8 @@ public class ProjectsFragment extends DA {
         view.animate().cancel();
         view.animate()
                 .alpha(0f)
-                .translationY(40f)
+                .scaleX(0f)
+                .scaleY(0f)
                 .setDuration(150)
                 .withEndAction(() -> view.setVisibility(View.GONE))
                 .start();

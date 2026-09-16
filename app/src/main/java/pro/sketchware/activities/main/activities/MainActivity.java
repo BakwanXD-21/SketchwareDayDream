@@ -244,6 +244,16 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             public void onDrawerStateChanged(int newState) {
             }
         });
+        
+        // Setup drawer button dengan oval drawable
+GradientDrawable drawerCircle = new GradientDrawable();
+drawerCircle.setShape(GradientDrawable.OVAL);
+drawerCircle.setColor(MaterialColors.getColor(
+        this,
+        R.attr.colorSurfaceContainer,
+        Color.TRANSPARENT
+));
+binding.drawerToggleBtn.setBackground(drawerCircle);
 
         // FAB Setup
         setupFabMenu();

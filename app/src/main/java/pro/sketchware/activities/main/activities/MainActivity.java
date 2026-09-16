@@ -206,16 +206,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         binding.toolbar.setNavigationIcon(null);
         binding.toolbar.setNavigationOnClickListener(null);
-
-        // Background Oval untuk Drawer Toggle Icon
-        GradientDrawable drawerToggleBg = new GradientDrawable();
-        drawerToggleBg.setShape(GradientDrawable.OVAL);
-        drawerToggleBg.setColor(MaterialColors.getColor(
-                this,
-                R.attr.colorSurfaceContainer,
-                Color.TRANSPARENT
-        ));
-        binding.drawerToggleBtn.setBackground(drawerToggleBg);
+        
+ShapeAppearanceModel shapeAppearance = ShapeAppearanceModel.builder()
+    .setAllCornerSizes(20f)
+    .build();
+ShapeDrawable shapeDrawable = new ShapeDrawable(shapeAppearance);
+shapeDrawable.setColor(MaterialColors.getColor(
+        this,
+        R.attr.colorSurfaceContainer,
+        Color.TRANSPARENT
+));
+binding.drawerToggleBtn.setBackground(shapeDrawable);
 
         // Custom Drawer Button Listener
         binding.drawerToggleBtn.setOnClickListener(v -> {

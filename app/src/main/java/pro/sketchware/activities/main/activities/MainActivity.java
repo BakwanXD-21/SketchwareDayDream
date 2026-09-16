@@ -35,8 +35,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import com.google.android.material.shape.ShapeAppearanceModel;
-import com.google.android.material.shape.ShapeDrawable;
+import com.google.android.material.shape.MaterialShapeDrawable;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -212,11 +211,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 ShapeAppearanceModel shapeAppearance = ShapeAppearanceModel.builder()
     .setAllCornerSizes(20f)
     .build();
-ShapeDrawable shapeDrawable = new ShapeDrawable(shapeAppearance);
-shapeDrawable.setColor(MaterialColors.getColor(
+MaterialShapeDrawable shapeDrawable = new MaterialShapeDrawable(shapeAppearance);
+shapeDrawable.setFillColor(android.content.res.ColorStateList.valueOf(
+    MaterialColors.getColor(
         this,
         R.attr.colorSurfaceContainer,
         Color.TRANSPARENT
+    )
 ));
 binding.drawerToggleBtn.setBackground(shapeDrawable);
 

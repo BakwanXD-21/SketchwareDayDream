@@ -1,0 +1,13 @@
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:name="vector"
+    android:width="960dp"
+    android:height="960dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:name="path"
+        android:pathData="M 150 720 Q 137.25 720 128.63 711.32 Q 120 702.65 120 689.82 Q 120 677 128.63 668.5 Q 137.25 660 150 660 L 810 660 Q 822.75 660 831.38 668.68 Q 840 677.35 840 690.18 Q 840 703 831.38 711.5 Q 822.75 720 810 720 L 150 720 Z M 150 510 Q 137.25 510 128.63 501.32 Q 120 492.65 120 479.82 Q 120 467 128.63 458.5 Q 137.25 450 150 450 L 810 450 Q 822.75 450 831.38 458.68 Q 840 467.35 840 480.18 Q 840 493 831.38 501.5 Q 822.75 510 810 510 L 150 510 Z M 150 300 Q 137.25 300 128.63 291.32 Q 120 282.65 120 269.82 Q 120 257 128.63 248.5 Q 137.25 240 150 240 L 810 240 Q 822.75 240 831.38 248.68 Q 840 257.35 840 270.18 Q 840 283 831.38 291.5 Q 822.75 300 810 300 L 150 300 Z"
+        android:fillColor="#ffffff"
+        android:strokeWidth="1"/>
+</vector>

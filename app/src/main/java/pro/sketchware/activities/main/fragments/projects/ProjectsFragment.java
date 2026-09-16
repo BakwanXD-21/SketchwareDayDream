@@ -1,33 +1,28 @@
 package pro.sketchware.activities.main.fragments.projects;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.RadioButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.besome.sketch.adapters.ProjectsAdapter;
 import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialFadeThrough;
 
 import java.util.ArrayList;
@@ -40,16 +35,12 @@ import java.util.stream.IntStream;
 import a.a.a.DA;
 import a.a.a.DB;
 import a.a.a.lC;
-import dev.chrisbanes.insetter.Insetter;
-import extensions.anbui.daydream.project.RestoreProject;
 import mod.hey.studios.project.ProjectTracker;
-import mod.hey.studios.project.backup.BackupRestoreManager;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
 import pro.sketchware.utility.UI;
 
-//DR
 public class ProjectsFragment extends DA {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final List<HashMap<String, Object>> projectsList = new ArrayList<>();
@@ -70,12 +61,6 @@ public class ProjectsFragment extends DA {
         }
     });
     private DB preference;
-    private EditText searchEditText;
-    private TextWatcher searchTextWatcher;
-    private ExtendedFloatingActionButton fabMain;
-    private ExtendedFloatingActionButton createFab;
-    private ExtendedFloatingActionButton restoreFab;
-    private boolean fabMenuExpanded = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -125,10 +110,6 @@ public class ProjectsFragment extends DA {
         openProjectSettings.launch(intent);
     }
 
-    public void restoreProject() {
-        new BackupRestoreManager(getActivity(), this).restore();
-    }
-
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         binding = MyprojectsBinding.inflate(inflater, parent, false);
@@ -138,218 +119,118 @@ public class ProjectsFragment extends DA {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        detachSearchListener();
-        binding = null; // avoid memory leaks
+        binding = null;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         preference = new DB(requireContext(), "project");
 
-        fabMain = requireActivity().findViewById(R.id.fab_main);
-        createFab = requireActivity().findViewById(R.id.create_new_project);
-        restoreFab = requireActivity().findViewById(R.id.restore_project);
-
-        fabMain.setOnClickListener(v -> toggleFabMenu());
-        createFab.setOnClickListener(v -> {
-            collapseFabMenu();
-            toProjectSettingsActivity();
-        });
-        restoreFab.setOnClickListener(v -> {
-            collapseFabMenu();
-            restoreProject();
-        });
-
-        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fabMain);
-        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(createFab);
-        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(restoreFab);
-
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
+        binding.swipeRefresh.setColorSchemeColors(MaterialColors.getColor(requireContext(), R.attr.colorPrimary, 0));
+        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(MaterialColors.getColor(requireContext(), R.attr.colorSurfaceContainer, 0));
 
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
 
-        binding.myprojects.post(this::refreshProjectsList); // wait for RecyclerView to be ready
-        UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
+        binding.myprojects.post(this::refreshProjectsList);
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
-        binding.nestedScroll.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (scrollY != oldScrollY && fabMenuExpanded) {
-                collapseFabMenu();
-            }
-        });
-
-        // Sorting UI removed: the list always defaults to newest project (highest id) on
-        // top, oldest (lowest id) at the bottom. See refreshProjectsList().
         binding.iconSort.setVisibility(View.GONE);
-
-        // The old inline "restore" row is removed in favor of the Restore FAB above.
-        // Restore hanya ada di FAB sekarang, bukan di special action container
+        binding.titleContainer.setVisibility(View.GONE);
         binding.specialActionContainer.setVisibility(View.GONE);
 
-        RestoreProject.setupDropFileTo(getActivity(), binding.getRoot());
+    }
 
-        searchEditText = requireActivity().findViewById(R.id.search_edit_text);
-        ImageView searchIcon = requireActivity().findViewById(R.id.search_icon);
-        if (searchIcon != null) {
-            searchIcon.setOnClickListener(v -> {
-                if (searchEditText == null) return;
-                searchEditText.requestFocus();
-                InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
-            });
+
+    public void filterProjects(String query) {
+        if (projectsAdapter != null) {
+            projectsAdapter.filterData(query == null ? "" : query);
         }
-        attachSearchListener();
-    }
 
-    private void attachSearchListener() {
-        if (searchEditText == null) return;
-        if (searchTextWatcher == null) {
-            searchTextWatcher = new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if (projectsAdapter == null || binding == null) return;
-                    String query = s.toString();
-                    projectsAdapter.filterData(query);
-                    binding.titleContainer.setVisibility(query.isEmpty() ? View.VISIBLE : View.GONE);
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                }
-            };
-        }
-        searchEditText.addTextChangedListener(searchTextWatcher);
-    }
-
-    private void detachSearchListener() {
-        if (searchEditText != null && searchTextWatcher != null) {
-            searchEditText.removeTextChangedListener(searchTextWatcher);
-        }
-    }
-
-    /**
-     * Buka menu FAB: tampilkan opsi Create & Restore dengan animasi, dan putar icon fab utama.
-     */
-    private void toggleFabMenu() {
-        if (fabMenuExpanded) {
-            collapseFabMenu();
-        } else {
-            expandFabMenu();
-        }
-    }
-
-    private void expandFabMenu() {
-        if (fabMenuExpanded || fabMain == null) return;
-        fabMenuExpanded = true;
-        fabMain.setIconResource(R.drawable.ic_mtrl_close);
-        fabMain.shrink();
-        showFabOption(createFab);
-        showFabOption(restoreFab);
-    }
-
-    /**
-     * Tutup menu FAB. Dipanggil saat: pilih salah satu opsi, scroll list,
-     * pindah tab, atau klik di luar area FAB (lihat MainActivity#dispatchTouchEvent).
-     */
-    public void collapseFabMenu() {
-        if (!fabMenuExpanded || fabMain == null) return;
-        fabMenuExpanded = false;
-        fabMain.setIconResource(R.drawable.ic_mtrl_add);
-        fabMain.extend();
-        hideFabOption(createFab);
-        hideFabOption(restoreFab);
-    }
-
-    public boolean isFabMenuExpanded() {
-        return fabMenuExpanded;
-    }
-
-    private void showFabOption(View view) {
-        if (view == null) return;
-        view.animate().cancel();
-        view.setVisibility(View.VISIBLE);
-        view.setAlpha(0f);
-        view.setScaleX(0f);
-        view.setScaleY(0f);
-        view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200).start();
-    }
-
-    private void hideFabOption(View view) {
-        if (view == null) return;
-        view.animate().cancel();
-        view.animate()
-                .alpha(0f)
-                .scaleX(0f)
-                .scaleY(0f)
-                .setDuration(150)
-                .withEndAction(() -> view.setVisibility(View.GONE))
-                .start();
-    }
-
-    @Override
-    public void onHiddenChanged(boolean hidden) {
-        super.onHiddenChanged(hidden);
-        if (getActivity() == null) return;
-        if (hidden) {
-            collapseFabMenu();
-            detachSearchListener();
-        } else {
-            attachSearchListener();
+        if (binding != null) {
+            binding.specialActionContainer.setVisibility(View.GONE);
+            binding.titleContainer.setVisibility(View.GONE);
         }
     }
 
     public void refreshProjectsList() {
-        // Check if the fragment is still attached to the activity
-        if (!isAdded()) return;
+    if (!isAdded()) return;
 
-        // Don't load project list without having permissions
-        if (!c()) {
-            if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-            ((MainActivity) requireActivity()).s(); // ask for permissions
-            return;
+    if (!c()) {
+        if (binding.swipeRefresh.isRefreshing()) {
+            binding.swipeRefresh.setRefreshing(false);
         }
 
-        executorService.execute(() -> {
-            List<HashMap<String, Object>> loadedProjects = lC.a();
-            loadedProjects.sort(new ProjectComparator(ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_DESCENDING, preference.a("pinnedProject", "-1")));
-
-            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
-
-            requireActivity().runOnUiThread(() -> {
-                if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-                if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
-                    binding.loadingContainer.setVisibility(View.GONE);
-                    binding.myprojects.setVisibility(View.VISIBLE);
-                }
-                projectsList.clear();
-                projectsList.addAll(loadedProjects);
-                diffResult.dispatchUpdatesTo(projectsAdapter);
-                if (searchEditText != null)
-                    projectsAdapter.filterData(searchEditText.getText().toString());
-            });
-        });
+        ((MainActivity) requireActivity()).s();
+        return;
     }
+
+    executorService.execute(() -> {
+        List<HashMap<String, Object>> loadedProjects = lC.a();
+
+        loadedProjects.sort(
+                new ProjectComparator(
+                        preference.d("sortBy"),
+                        preference.a("pinnedProject", "-1")
+                )
+        );
+
+        DiffUtil.DiffResult diffResult =
+                DiffUtil.calculateDiff(
+                        new ProjectDiffCallback(
+                                projectsList,
+                                loadedProjects
+                        )
+                );
+
+        requireActivity().runOnUiThread(() -> {
+            if (binding == null) return;
+
+            if (binding.swipeRefresh.isRefreshing()) {
+                binding.swipeRefresh.setRefreshing(false);
+            }
+
+            if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
+                binding.loadingContainer.setVisibility(View.GONE);
+                binding.myprojects.setVisibility(View.VISIBLE);
+            }
+
+            projectsList.clear();
+            projectsList.addAll(loadedProjects);
+
+            diffResult.dispatchUpdatesTo(projectsAdapter);
+
+            // WAJIB agar project langsung muncul
+            // tanpa harus mengetik search terlebih dahulu.
+            projectsAdapter.filterData("");
+        });
+    });
+}
 
     private void addProject(String sc_id) {
-        executorService.execute(() -> {
-            HashMap<String, Object> newProject = lC.b(sc_id);
-            if (newProject != null) {
-                requireActivity().runOnUiThread(() -> {
-                    projectsList.add(0, newProject);
-                    projectsAdapter.notifyDataSetChanged();
-                    binding.myprojects.scrollToPosition(0);
-                });
-            }
-        });
-    }
+    executorService.execute(() -> {
+        HashMap<String, Object> newProject = lC.b(sc_id);
+
+        if (newProject != null) {
+            requireActivity().runOnUiThread(() -> {
+                if (binding == null || projectsAdapter == null) return;
+
+                projectsList.add(0, newProject);
+
+                projectsAdapter.notifyDataSetChanged();
+
+                // Sinkronkan filter adapter
+                projectsAdapter.filterData("");
+
+                binding.myprojects.scrollToPosition(0);
+            });
+        }
+    });
+}
 
     private void updateProject(String sc_id) {
         executorService.execute(() -> {

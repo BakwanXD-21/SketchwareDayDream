@@ -5,16 +5,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -22,6 +30,9 @@ import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -30,10 +41,9 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,59 +52,46 @@ import java.util.Objects;
 import a.a.a.DB;
 import a.a.a.GB;
 import extensions.anbui.daydream.configs.Configs;
-import extensions.anbui.daydream.file.FilesTools;
-import extensions.anbui.daydream.git.GitQuickLook;
 import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.ConfigActivity;
-import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
-import pro.sketchware.activities.about.AboutActivity;
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
-import pro.sketchware.activities.main.fragments.projects_store.ProjectsStoreFragment;
 import pro.sketchware.databinding.MainBinding;
-import pro.sketchware.lib.base.BottomSheetDialogView;
 import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
 
-//DR
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
-    private static final String PROJECTS_STORE_FRAGMENT_TAG = "projects_store_fragment";
     private ActionBarDrawerToggle drawerToggle;
     private DB u;
     private Snackbar storageAccessDenied;
     private MainBinding binding;
+    private boolean isFabMenuOpen = false;
+
     private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+                return;
+            }
             setEnabled(false);
             binding.drawerLayout.closeDrawers();
         }
     };
     private ProjectsFragment projectsFragment;
-    private ProjectsStoreFragment projectsStoreFragment;
     private Fragment activeFragment;
     private BackupRestoreManager backupRestoreManager;
     public static boolean needRefreshProjectList = false;
     @IdRes
     private int currentNavItemId = R.id.item_projects;
 
-//    private static boolean isFirebaseInitialized(Context context) {
-//        try {
-//            return FirebaseApp.getApps(context) != null && !FirebaseApp.getApps(context).isEmpty();
-//        } catch (Exception e) {
-//            return false;
-//        }
-//    }
-
     @Override
-    // onRequestPermissionsResult but for Storage access only, and only when granted
     public void g(int i) {
         if (i == 9501) {
             allFilesAccessCheck();
@@ -146,7 +143,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     break;
 
                 case 212:
-                    if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
+                    if (data != null && !(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
                         if (activeFragment instanceof ProjectsFragment) {
                             projectsFragment.refreshProjectsList();
                         }
@@ -160,16 +157,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         drawerToggle.onConfigurationChanged(newConfig);
+        setDrawerCircleIcon();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+        
         enableEdgeToEdgeNoContrast();
 
         binding = MainBinding.inflate(getLayoutInflater());
-
         setContentView(binding.getRoot());
         setSupportActionBar(binding.toolbar);
 
@@ -182,29 +180,33 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (u1I1 <= 0) {
             u.a("U1I1", System.currentTimeMillis());
         }
-        if (System.currentTimeMillis() - u1I1 > /* (a day) */ 1000 * 60 * 60 * 24) {
+        if (System.currentTimeMillis() - u1I1 > 1000 * 60 * 60 * 24) {
             u.a("U1I0", Integer.valueOf(u1I0 + 1));
         }
 
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(null);
 
-        // Deepseek-style "push" drawer: no dark scrim, main content slides and
-        // scales alongside the drawer instead of being covered by it. The
-        // drawer's own content (MainDrawer / system load, etc.) is untouched.
-        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
-
         drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
+        drawerToggle.setDrawerIndicatorEnabled(false);
+
+        // Drawer button is now the 48dp ImageButton from main.xml.
+        binding.drawerToggleBtn.setOnClickListener(v -> {
+            clearSearchFocus();
+            if (binding.drawerLayout.isDrawerOpen(binding.leftDrawer)) {
+                binding.drawerLayout.closeDrawer(binding.leftDrawer);
+            } else {
+                binding.drawerLayout.openDrawer(binding.leftDrawer);
+            }
+        });
         binding.drawerLayout.addDrawerListener(drawerToggle);
+        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
+        binding.drawerLayout.setDrawerElevation(0f);
         binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
             public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
-                float drawerWidth = drawerView.getWidth();
-                binding.layoutCoordinator.setTranslationX(slideOffset * drawerWidth);
-
-                float scale = 1f - (0.08f * slideOffset);
-                binding.layoutCoordinator.setScaleX(scale);
-                binding.layoutCoordinator.setScaleY(scale);
+                float moveFactor = drawerView.getWidth() * slideOffset;
+                binding.layoutCoordinator.setTranslationX(moveFactor);
             }
 
             @Override
@@ -215,12 +217,46 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
             @Override
             public void onDrawerClosed(@NonNull View drawerView) {
+                binding.layoutCoordinator.setTranslationX(0f);
             }
 
             @Override
             public void onDrawerStateChanged(int newState) {
             }
         });
+
+        setupFabMenu();
+        setupProjectSearch();
+
+        // Keep the FAB above the system navigation bar / gesture area.
+        ViewCompat.setOnApplyWindowInsetsListener(
+                binding.fabMenuContainer,
+                new androidx.core.view.OnApplyWindowInsetsListener() {
+                    @Override
+                    public WindowInsetsCompat onApplyWindowInsets(
+                            View v, WindowInsetsCompat insets) {
+
+                        Insets systemBars = insets.getInsets(
+                                WindowInsetsCompat.Type.systemBars());
+
+                        ViewGroup.MarginLayoutParams params =
+                                (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+
+                        // Base 16dp + actual bottom system inset.
+                        params.bottomMargin = dp(16) + systemBars.bottom;
+                        params.rightMargin = dp(16);
+
+                        v.setLayoutParams(params);
+
+                        return insets;
+                    }
+                });
+
+        GradientDrawable searchCircle = new GradientDrawable();
+        searchCircle.setShape(GradientDrawable.OVAL);
+        searchCircle.setColor(MaterialColors.getColor(
+                this, R.attr.colorSurfaceContainer, Color.TRANSPARENT));
+        binding.searchButton.setBackground(searchCircle);
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -259,7 +295,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                                 manager.doRestore(path, true);
                             }
 
-                            // Clear intent so it doesn't duplicate
                             getIntent().setData(null);
                         } else {
                             SketchwareUtil.toastError("Failed to copy backup file to temporary location: " + reason, Toast.LENGTH_LONG);
@@ -271,15 +306,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         if (savedInstanceState != null) {
             projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
-            projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);
             currentNavItemId = savedInstanceState.getInt("selected_tab_id");
             Fragment current = getFragmentForNavId(currentNavItemId);
             if (current instanceof ProjectsFragment) {
                 navigateToProjectsFragment();
-            } else if (current instanceof ProjectsStoreFragment) {
-                navigateToSketchubFragment();
             }
-
             return;
         }
 
@@ -290,36 +321,231 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         DRSetup.startNow(this);
     }
 
-    /**
-     * Menutup menu FAB (Create/Restore) ketika user menyentuh di luar area FAB.
-     * Dipanggil dari dispatchTouchEvent agar "klik di mana saja" bisa dismiss FAB.
-     */
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN
-                && activeFragment instanceof ProjectsFragment
-                && projectsFragment != null
-                && projectsFragment.isFabMenuExpanded()
-                && !isTouchInsideView(binding.fabContainer, ev.getRawX(), ev.getRawY())) {
-            projectsFragment.collapseFabMenu();
-        }
-        return super.dispatchTouchEvent(ev);
+    private void setDrawerCircleIcon() {
+        if (binding == null) return;
+
+        DrawerCircleDrawable icon = new DrawerCircleDrawable(
+                MaterialColors.getColor(this, R.attr.colorSurfaceContainer, Color.TRANSPARENT),
+                MaterialColors.getColor(this, R.attr.colorOnSurface, Color.WHITE),
+                dp(48)
+        );
+
+        binding.drawerToggleBtn.setImageDrawable(icon);
+        binding.drawerToggleBtn.setMinimumWidth(0);
+        binding.drawerToggleBtn.setMinimumHeight(0);
+
+        ViewGroup.LayoutParams params = binding.drawerToggleBtn.getLayoutParams();
+        params.width = dp(48);
+        params.height = dp(48);
+        binding.drawerToggleBtn.setLayoutParams(params);
     }
 
-    private boolean isTouchInsideView(View view, float rawX, float rawY) {
-        if (view == null || view.getVisibility() != View.VISIBLE) return false;
-        int[] location = new int[2];
-        view.getLocationOnScreen(location);
-        float x = rawX - location[0];
-        float y = rawY - location[1];
-        return x >= 0 && x <= view.getWidth() && y >= 0 && y <= view.getHeight();
+    private static class DrawerCircleDrawable extends Drawable {
+        private final Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int size;
+
+        DrawerCircleDrawable(int circleColor, int iconColor, int size) {
+            this.size = size;
+            circlePaint.setColor(circleColor);
+            iconPaint.setColor(iconColor);
+            iconPaint.setStrokeWidth(2.2f);
+            iconPaint.setStrokeCap(Paint.Cap.ROUND);
+            iconPaint.setStyle(Paint.Style.STROKE);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            float cx = b.centerX();
+            float cy = b.centerY();
+            float radius = Math.min(b.width(), b.height()) * 0.50f;
+
+            canvas.drawCircle(cx, cy, radius, circlePaint);
+
+            float left = cx - radius * 0.42f;
+            float right = cx + radius * 0.42f;
+            float top = cy - radius * 0.30f;
+            float mid = cy;
+            float bottom = cy + radius * 0.30f;
+
+            canvas.drawLine(left, top, right, top, iconPaint);
+            canvas.drawLine(left, mid, right, mid, iconPaint);
+            canvas.drawLine(left, bottom, right, bottom, iconPaint);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            circlePaint.setAlpha(alpha);
+            iconPaint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+            circlePaint.setColorFilter(colorFilter);
+            iconPaint.setColorFilter(colorFilter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+    }
+
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private void clearSearchFocus() {
+        if (binding == null) return;
+        if (binding.searchInput.hasFocus()) {
+            binding.searchInput.clearFocus();
+            InputMethodManager imm =
+                    (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(binding.searchInput.getWindowToken(), 0);
+            }
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN && binding != null
+                && binding.searchInput.hasFocus()) {
+            Rect searchRect = new Rect();
+            Rect buttonRect = new Rect();
+            binding.searchContainer.getGlobalVisibleRect(searchRect);
+            binding.searchButton.getGlobalVisibleRect(buttonRect);
+
+            if (!searchRect.contains((int) event.getRawX(), (int) event.getRawY())
+                    && !buttonRect.contains((int) event.getRawX(), (int) event.getRawY())) {
+                clearSearchFocus();
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private void setupProjectSearch() {
+        binding.searchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                boolean hasText = s != null && s.length() > 0;
+
+                binding.searchButton.setImageResource(
+                        hasText
+                                ? R.drawable.ic_mtrl_close
+                                : R.drawable.ic_mtrl_search
+                );
+
+                if (projectsFragment != null) {
+                    projectsFragment.filterProjects(s == null ? "" : s.toString());
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        binding.searchButton.setOnClickListener(v -> {
+            String query = binding.searchInput.getText().toString();
+
+            if (query.length() > 0) {
+                binding.searchInput.setText("");
+            } else {
+                binding.searchInput.requestFocus();
+                InputMethodManager imm =
+                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
+    }
+
+    private void setupFabMenu() {
+        binding.createNewProject.setOnClickListener(v -> {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+            } else {
+                openFabMenu();
+            }
+        });
+
+        binding.fabOverlay.setOnClickListener(v -> {
+            closeFabMenu();
+            clearSearchFocus();
+        });
+
+        binding.fabCreate.setOnClickListener(v -> {
+            closeFabMenu();
+            if (projectsFragment != null) {
+                projectsFragment.toProjectSettingsActivity();
+            }
+        });
+
+        binding.fabRestore.setOnClickListener(v -> {
+            closeFabMenu();
+            if (backupRestoreManager == null) {
+                backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
+            }
+            backupRestoreManager.restore();
+        });
+    }
+
+    private void openFabMenu() {
+        isFabMenuOpen = true;
+        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+
+        binding.layoutFabCreate.setVisibility(View.VISIBLE);
+        binding.layoutFabRestore.setVisibility(View.VISIBLE);
+
+        binding.layoutFabCreate.setAlpha(0f);
+        binding.layoutFabCreate.setTranslationY(20f);
+        binding.layoutFabRestore.setAlpha(0f);
+        binding.layoutFabRestore.setTranslationY(20f);
+
+        binding.layoutFabCreate.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(180)
+                .start();
+
+        binding.layoutFabRestore.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(50)
+                .setDuration(180)
+                .start();
+
+        binding.fabOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void closeFabMenu() {
+        isFabMenuOpen = false;
+        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+        binding.layoutFabCreate.setVisibility(View.GONE);
+        binding.layoutFabRestore.setVisibility(View.GONE);
+        binding.fabOverlay.setVisibility(View.GONE);
     }
 
     private Fragment getFragmentForNavId(int navItemId) {
         if (navItemId == R.id.item_projects) {
             return projectsFragment;
-        } else if (navItemId == R.id.item_sketchub) {
-            return projectsStoreFragment;
         }
         throw new IllegalArgumentException();
     }
@@ -339,7 +565,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
 
-        binding.fabMain.show();
+        binding.createNewProject.show();
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_FRAGMENT_TAG) == null) {
             shouldShow = false;
@@ -350,49 +576,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         activeFragment = projectsFragment;
         currentNavItemId = R.id.item_projects;
-    }
-
-    private void navigateToSketchubFragment() {
-        if (projectsStoreFragment == null) {
-            projectsStoreFragment = new ProjectsStoreFragment();
-        }
-
-        boolean shouldShow = true;
-        FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction transaction = fm.beginTransaction();
-
-        if (projectsFragment != null) projectsFragment.collapseFabMenu();
-        binding.fabMain.hide();
-        if (activeFragment != null) transaction.hide(activeFragment);
-        if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
-            shouldShow = false;
-            transaction.add(binding.container.getId(), projectsStoreFragment, PROJECTS_STORE_FRAGMENT_TAG);
-        }
-        if (shouldShow) transaction.show(projectsStoreFragment);
-        transaction.commit();
-
-        activeFragment = projectsStoreFragment;
-        currentNavItemId = R.id.item_sketchub;
-    }
-
-    @NonNull
-    private BottomSheetDialogView getBottomSheetDialogView() {
-        BottomSheetDialogView bottomSheetDialog = new BottomSheetDialogView(this);
-        bottomSheetDialog.setTitle("Major changes in v7.0.0");
-        bottomSheetDialog.setDescription("""
-                There have been major changes since v6.3.0 fix1, \
-                and it's very important to know them all if you want your projects to still work.
-                
-                You can view all changes whenever you want at the About Sketchware Pro screen.""");
-
-        bottomSheetDialog.setPositiveButton("View changes", (dialog, which) -> {
-            ConfigActivity.setSetting(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER, true);
-            Intent launcher = new Intent(this, AboutActivity.class);
-            launcher.putExtra("select", "changelog");
-            startActivity(launcher);
-        });
-        bottomSheetDialog.setCancelable(false);
-        return bottomSheetDialog;
     }
 
     @Override
@@ -408,15 +591,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         drawerToggle.syncState();
-//        if (isFirebaseInitialized(this)) {
-//            FirebaseMessaging.getInstance().subscribeToTopic("all");
-//        }
+        setDrawerCircleIcon();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        /* Check if the device is running low on storage space */
+
         long freeMegabytes = GB.c();
         if (freeMegabytes < 100 && freeMegabytes > 0) {
             showNoticeNotEnoughFreeStorageSpace();
@@ -433,29 +614,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             projectsFragment.refreshProjectsList();
             needRefreshProjectList = false;
         }
+    }
 
-        GitQuickLook.cleanUp(this);
-
-        if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER) && FilesTools.isPermissionGranted(this)) {
-            BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();
-            bottomSheetDialog.getPositiveButton().setEnabled(false);
-
-            CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
-                @Override
-                public void onTick(long millisUntilFinished) {
-                    bottomSheetDialog.setPositiveButtonText(millisUntilFinished / 1000 + "");
-                }
-
-                @Override
-                public void onFinish() {
-                    bottomSheetDialog.setPositiveButtonText("View changes");
-                    bottomSheetDialog.getPositiveButton().setEnabled(true);
-                }
-            };
-            countDownTimer.start();
-
-            if (!isFinishing()) bottomSheetDialog.show();
-        }
+    @Override
+    public void onPause() {
+        super.onPause();
     }
 
     private void allFilesAccessCheck() {
@@ -467,7 +630,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_mtrl_warning);
                 dialog.setTitle("Android 11 storage access");
-                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid " + "taking ages to build projects. Don't worry, we can't do more to storage than " + "with current granted permissions.");
+                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid taking ages to build projects. Don't worry, we can't do more to storage than with current granted permissions.");
                 dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings), (v, which) -> {
                     FileUtil.requestAllFilesAccessPermission(this);
                     v.dismiss();
@@ -478,7 +641,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                         if (!optOutFile.createNewFile())
                             throw new IOException("Failed to create file " + optOutFile);
                     } catch (IOException e) {
-                        Log.e("MainActivity", "Error while trying to create " + "\"Don't show Android 11 hint\" dialog file: " + e.getMessage(), e);
+                        Log.e("MainActivity", "Error while trying to create dialog file: " + e.getMessage(), e);
                     }
                     v.dismiss();
                 });
@@ -519,5 +682,4 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             storageAccessDenied.show();
         }
     }
-
 }

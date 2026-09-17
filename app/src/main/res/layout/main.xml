@@ -62,9 +62,8 @@
                         android:id="@+id/drawerToggleBtn"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
-                        android:layout_marginStart="6dp"
                         android:background="?attr/colorSurfaceContainer"
-                        android:contentDescription="Search"
+                        android:contentDescription="Drawer"
                         android:minWidth="0dp"
                         android:minHeight="0dp"
                         android:padding="12dp"
@@ -80,6 +79,7 @@
                         android:id="@+id/search_container"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         app:cardBackgroundColor="?attr/colorSurfaceContainer"
                         app:cardCornerRadius="28dp"
@@ -202,15 +202,15 @@
                         android:paddingBottom="8dp"
                         android:text="Restore"
                         android:textColor="?attr/colorOnSurface"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
 
                 </com.google.android.material.card.MaterialCardView>
 
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_restore"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:elevation="0dp"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
@@ -253,15 +253,15 @@
                         android:paddingBottom="8dp"
                         android:text="Create"
                         android:textColor="?attr/colorOnSurface"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
 
                 </com.google.android.material.card.MaterialCardView>
 
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_create"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:elevation="0dp"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
@@ -279,8 +279,8 @@
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/create_new_project"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
                 android:elevation="0dp"
                 android:stateListAnimator="@null"
                 app:elevation="0dp"

@@ -100,7 +100,7 @@
                             android:paddingEnd="18dp"
                             android:textColor="?attr/colorOnSurface"
                             android:textColorHint="?attr/colorOnSurfaceVariant"
-                            android:textSize="15sp" />
+                            android:textSize="17sp" />
 
                     </com.google.android.material.card.MaterialCardView>
 
@@ -216,6 +216,7 @@
                     app:elevation="0dp"
                     app:hoveredFocusedTranslationZ="0dp"
                     app:pressedTranslationZ="0dp"
+                    app:maxImageSize="32dp"
                     app:srcCompat="@drawable/ic_mtrl_history"
                     tools:ignore="ContentDescription" />
 
@@ -267,6 +268,7 @@
                     app:elevation="0dp"
                     app:hoveredFocusedTranslationZ="0dp"
                     app:pressedTranslationZ="0dp"
+                    app:maxImageSize="32dp"
                     app:srcCompat="@drawable/ic_mtrl_add"
                     tools:ignore="ContentDescription" />
 
@@ -286,11 +288,9 @@
                 app:elevation="0dp"
                 app:hoveredFocusedTranslationZ="0dp"
                 app:pressedTranslationZ="0dp"
+                app:maxImageSize="32dp"
                 app:srcCompat="@drawable/ic_mtrl_folder"
                 tools:ignore="ContentDescription" />
-
-        </LinearLayout>
-
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

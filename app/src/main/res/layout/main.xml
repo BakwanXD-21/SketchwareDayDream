@@ -154,7 +154,7 @@
             android:visibility="gone" />
 
 
-        <!-- ========================= -->
+      <!-- ========================= -->
         <!-- FAB SPEED DIAL CONTAINER   -->
         <!-- ========================= -->
 
@@ -212,12 +212,10 @@
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:elevation="0dp"
-                    android:scaleType="center"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
                     app:hoveredFocusedTranslationZ="0dp"
                     app:pressedTranslationZ="0dp"
-                    app:maxImageSize="32dp"
                     app:srcCompat="@drawable/ic_mtrl_history"
                     tools:ignore="ContentDescription" />
 
@@ -265,12 +263,10 @@
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:elevation="0dp"
-                    android:scaleType="center"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
                     app:hoveredFocusedTranslationZ="0dp"
                     app:pressedTranslationZ="0dp"
-                    app:maxImageSize="32dp"
                     app:srcCompat="@drawable/ic_mtrl_add"
                     tools:ignore="ContentDescription" />
 
@@ -286,12 +282,10 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:elevation="0dp"
-                android:scaleType="center"
                 android:stateListAnimator="@null"
                 app:elevation="0dp"
                 app:hoveredFocusedTranslationZ="0dp"
                 app:pressedTranslationZ="0dp"
-                app:maxImageSize="32dp"
                 app:srcCompat="@drawable/ic_mtrl_folder"
                 tools:ignore="ContentDescription" />
 

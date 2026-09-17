@@ -292,6 +292,7 @@
                 app:srcCompat="@drawable/ic_mtrl_folder"
                 tools:ignore="ContentDescription" />
 
+        </LinearLayout>
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 

@@ -209,8 +209,8 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_restore"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:elevation="0dp"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
@@ -260,8 +260,8 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_create"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:elevation="0dp"
                     android:stateListAnimator="@null"
                     app:elevation="0dp"
@@ -279,8 +279,8 @@
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/create_new_project"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:elevation="0dp"
                 android:stateListAnimator="@null"
                 app:elevation="0dp"
